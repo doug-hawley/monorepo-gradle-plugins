@@ -1,4 +1,4 @@
-package com.douglan.monorepochangedprojects
+package com.bitmoxie.monorepochangedprojects
 
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty

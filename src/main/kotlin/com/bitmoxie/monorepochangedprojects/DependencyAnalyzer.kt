@@ -1,4 +1,4 @@
-package com.douglan.monorepochangedprojects
+package com.bitmoxie.monorepochangedprojects
 
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ProjectDependency

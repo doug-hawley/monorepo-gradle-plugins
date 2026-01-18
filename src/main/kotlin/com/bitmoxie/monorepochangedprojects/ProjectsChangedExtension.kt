@@ -1,4 +1,4 @@
-package com.douglan.monorepochangedprojects
+package com.bitmoxie.monorepochangedprojects
 
 /**
  * Extension for configuring the monorepo-changed-projects plugin.

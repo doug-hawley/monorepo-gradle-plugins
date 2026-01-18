@@ -4,7 +4,7 @@ plugins {
     `maven-publish`
 }
 
-group = "com.douglan"
+group = "com.bitmoxie"
 version = "1.0.0"
 
 repositories {
@@ -26,8 +26,8 @@ tasks.withType<Test>().configureEach {
 gradlePlugin {
     plugins {
         register("monorepoChangedProjectsPlugin") {
-            id = "com.douglan.monorepo-changed-projects"
-            implementationClass = "com.douglan.monorepochangedprojects.MonorepoChangedProjectsPlugin"
+            id = "com.bitmoxie.monorepo-changed-projects"
+            implementationClass = "com.bitmoxie.monorepochangedprojects.MonorepoChangedProjectsPlugin"
             displayName = "Monorepo Changed Projects Plugin"
             description = "A Gradle plugin to detect changed projects in a monorepo based on git history"
         }

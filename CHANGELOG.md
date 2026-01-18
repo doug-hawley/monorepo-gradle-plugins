@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### BREAKING CHANGES
 - **Project renamed** from `projects-changed-plugin` to `monorepo-changed-projects-plugin`
-- **Plugin ID changed** from `com.douglan.projects-changed` to `com.douglan.monorepo-changed-projects`
-- **Package renamed** from `com.douglan.projectschanged` to `com.douglan.monorepochangedprojects`
+- **Plugin ID changed** from `com.bitmoxie.projects-changed` to `com.bitmoxie.monorepo-changed-projects`
+- **Package renamed** from `com.bitmoxie.projectschanged` to `com.bitmoxie.monorepochangedprojects`
 - **Main class renamed** from `ProjectsChangedPlugin` to `MonorepoChangedProjectsPlugin`
 - **Migrated tests** from JUnit to Kotest
 

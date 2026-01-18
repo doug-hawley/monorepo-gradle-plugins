@@ -1,4 +1,4 @@
-package com.douglan.monorepochangedprojects
+package com.bitmoxie.monorepochangedprojects
 
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -6,14 +6,14 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import org.gradle.testfixtures.ProjectBuilder
 
-class ProjectsChangedPluginTest : FunSpec({
+class MonorepoChangedProjectsPluginTest : FunSpec({
 
     test("plugin registers task") {
         // given
         val project = ProjectBuilder.builder().build()
 
         // when
-        project.pluginManager.apply("com.douglan.monorepo-changed-projects")
+        project.pluginManager.apply("com.bitmoxie.monorepo-changed-projects")
 
         // then
         val task = project.tasks.findByName("detectChangedProjects")
@@ -26,7 +26,7 @@ class ProjectsChangedPluginTest : FunSpec({
         val project = ProjectBuilder.builder().build()
 
         // when
-        project.pluginManager.apply("com.douglan.monorepo-changed-projects")
+        project.pluginManager.apply("com.bitmoxie.monorepo-changed-projects")
 
         // then
         val extension = project.extensions.findByName("projectsChanged")
@@ -37,7 +37,7 @@ class ProjectsChangedPluginTest : FunSpec({
     test("extension has correct defaults") {
         // given
         val project = ProjectBuilder.builder().build()
-        project.pluginManager.apply("com.douglan.monorepo-changed-projects")
+        project.pluginManager.apply("com.bitmoxie.monorepo-changed-projects")
 
         // when
         val extension = project.extensions.getByType(ProjectsChangedExtension::class.java)
@@ -51,7 +51,7 @@ class ProjectsChangedPluginTest : FunSpec({
     test("extension can be configured") {
         // given
         val project = ProjectBuilder.builder().build()
-        project.pluginManager.apply("com.douglan.monorepo-changed-projects")
+        project.pluginManager.apply("com.bitmoxie.monorepo-changed-projects")
         val extension = project.extensions.getByType(ProjectsChangedExtension::class.java)
 
         // when
@@ -68,7 +68,7 @@ class ProjectsChangedPluginTest : FunSpec({
     test("task has correct group and description") {
         // given
         val project = ProjectBuilder.builder().build()
-        project.pluginManager.apply("com.douglan.monorepo-changed-projects")
+        project.pluginManager.apply("com.bitmoxie.monorepo-changed-projects")
 
         // when
         val task = project.tasks.findByName("detectChangedProjects")
@@ -81,15 +81,22 @@ class ProjectsChangedPluginTest : FunSpec({
 
     test("plugin can detect projects with no git repository") {
         // given
-        val project = ProjectBuilder.builder().build()
-        project.pluginManager.apply("com.douglan.monorepo-changed-projects")
-        val task = project.tasks.findByName("detectChangedProjects") as DetectChangedProjectsTask
+        val tempDir = kotlin.io.path.createTempDirectory("test-no-git").toFile()
+        try {
+            val project = ProjectBuilder.builder()
+                .withProjectDir(tempDir)
+                .build()
+            project.pluginManager.apply("com.bitmoxie.monorepo-changed-projects")
+            val task = project.tasks.findByName("detectChangedProjects") as DetectChangedProjectsTask
 
-        // when
-        task.detectChanges()
+            // when
+            task.detectChanges()
 
-        // then
-        val changedProjects = project.extensions.extraProperties.get("changedProjects") as Set<String>
-        changedProjects shouldBe emptySet()
+            // then
+            val changedProjects = project.extensions.extraProperties.get("changedProjects") as Set<String>
+            changedProjects shouldBe emptySet()
+        } finally {
+            tempDir.deleteRecursively()
+        }
     }
 })

@@ -36,7 +36,7 @@ This dramatically reduces build times in CI/CD pipelines by avoiding unnecessary
 
 ```kotlin
 plugins {
-    id("com.douglan.monorepo-changed-projects") version "1.0.0"
+    id("com.bitmoxie.monorepo-changed-projects") version "1.0.0"
 }
 ```
 
@@ -82,7 +82,7 @@ For a multi-module project, the plugin can determine which subprojects are affec
 ```kotlin
 // In root build.gradle.kts
 plugins {
-    id("com.douglan.monorepo-changed-projects") version "1.0.0"
+    id("com.bitmoxie.monorepo-changed-projects") version "1.0.0"
 }
 
 projectsChanged {
