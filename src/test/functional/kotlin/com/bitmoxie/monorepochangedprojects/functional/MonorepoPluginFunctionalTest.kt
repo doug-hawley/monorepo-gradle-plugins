@@ -20,8 +20,9 @@ class MonorepoPluginFunctionalTest : FunSpec({
         // Setup: Standard project structure
         val project = testProjectListener.createStandardProject()
 
-        // Make changes to common-lib
+        // Make changes to common-lib and commit them
         project.appendToFile(Files.COMMON_LIB_SOURCE, "\n// Added comment")
+        project.commitAll("Change common-lib")
 
         // Execute
         val result = project.runTask("detectChangedProjects")
@@ -48,8 +49,9 @@ class MonorepoPluginFunctionalTest : FunSpec({
         // Setup
         val project = testProjectListener.createStandardProject()
 
-        // Make changes only to module1
+        // Make changes only to module1 and commit
         project.appendToFile(Files.MODULE1_SOURCE, "\n// Modified module1")
+        project.commitAll("Change module1")
 
         // Execute
         val result = project.runTask("detectChangedProjects")
@@ -66,8 +68,9 @@ class MonorepoPluginFunctionalTest : FunSpec({
         // Setup
         val project = testProjectListener.createStandardProject()
 
-        // Make changes to module2 (which both apps depend on)
+        // Make changes to module2 (which both apps depend on) and commit
         project.appendToFile(Files.MODULE2_SOURCE, "\n// Modified module2")
+        project.commitAll("Change module2")
 
         // Execute
         val result = project.runTask("detectChangedProjects")
@@ -84,8 +87,9 @@ class MonorepoPluginFunctionalTest : FunSpec({
         // Setup
         val project = testProjectListener.createStandardProject()
 
-        // Make changes only to app1 (leaf project)
+        // Make changes only to app1 (leaf project) and commit
         project.appendToFile(Files.APP1_SOURCE, "\n// Modified app")
+        project.commitAll("Change app1")
 
         // Execute
         val result = project.runTask("detectChangedProjects")
@@ -120,9 +124,10 @@ class MonorepoPluginFunctionalTest : FunSpec({
         // Setup
         val project = testProjectListener.createStandardProject()
 
-        // Make changes to both apps (independent changes)
+        // Make changes to both apps (independent changes) and commit
         project.appendToFile(Files.APP1_SOURCE, "\n// Modified app1")
         project.appendToFile(Files.APP2_SOURCE, "\n// Modified app2")
+        project.commitAll("Change both apps")
 
         // Execute
         val result = project.runTask("detectChangedProjects")
@@ -139,7 +144,7 @@ class MonorepoPluginFunctionalTest : FunSpec({
         // Setup
         val project = testProjectListener.createStandardProject()
 
-        // Create a new untracked file in common-lib
+        // Create a new untracked file in common-lib (this tests untracked detection)
         project.createNewFile("common-lib/src/main/kotlin/com/example/NewFile.kt",
             """
             package com.example
@@ -165,11 +170,11 @@ class MonorepoPluginFunctionalTest : FunSpec({
         )
     }
 
-    test("plugin detects staged but uncommitted changes") {
+    test("plugin detects staged changes without committing") {
         // Setup
         val project = testProjectListener.createStandardProject()
 
-        // Make and stage changes to module1
+        // Make and stage changes to module1 (but don't commit)
         project.appendToFile(Files.MODULE1_SOURCE, "\n// Staged change")
         project.stageFile(Files.MODULE1_SOURCE)
 
@@ -187,8 +192,9 @@ class MonorepoPluginFunctionalTest : FunSpec({
         // Setup
         val project = testProjectListener.createStandardProject()
 
-        // Modify build file
+        // Modify build file and commit
         project.appendToFile(Files.MODULE2_BUILD, "\n// Build config change")
+        project.commitAll("Change build config")
 
         // Execute
         val result = project.runTask("detectChangedProjects")
@@ -204,8 +210,9 @@ class MonorepoPluginFunctionalTest : FunSpec({
         // Setup
         val project = testProjectListener.createStandardProject()
 
-        // Make changes to module2 (affects both apps)
+        // Make changes to module2 (affects both apps) and commit
         project.appendToFile(Files.MODULE2_SOURCE, "\n// Changed")
+        project.commitAll("Change module2")
 
         // Execute
         val result = project.runTask("detectChangedProjects")
@@ -217,6 +224,34 @@ class MonorepoPluginFunctionalTest : FunSpec({
         val changedApps = changedProjects.filter { it.startsWith(":apps") }
         changedApps shouldHaveSize 2
         changedApps shouldContainAll setOf(Projects.APP1, Projects.APP2)
+    }
+
+    test("plugin detects staged changes to multiple projects") {
+        // Setup
+        val project = testProjectListener.createStandardProject()
+
+        // Make changes to common-lib and app2, stage but don't commit
+        project.appendToFile(Files.COMMON_LIB_SOURCE, "\n// Staged common change")
+        project.stageFile(Files.COMMON_LIB_SOURCE)
+        project.appendToFile(Files.APP2_SOURCE, "\n// Staged app change")
+        project.stageFile(Files.APP2_SOURCE)
+
+        // Execute
+        val result = project.runTask("detectChangedProjects")
+
+        // Assert
+        result.task(":detectChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+
+        val changedProjects = result.extractChangedProjects()
+        // common-lib affects all projects, app2 adds itself
+        changedProjects shouldHaveSize 5
+        changedProjects shouldContainAll setOf(
+            Projects.COMMON_LIB,
+            Projects.MODULE1,
+            Projects.MODULE2,
+            Projects.APP1,
+            Projects.APP2
+        )
     }
 })
 
