@@ -208,6 +208,30 @@ Before submitting changes, verify:
 - [ ] CHANGELOG.md has an entry for the change (version history only)
 - [ ] No unnecessary documentation files were created
 
+## Debugging Functional Tests
+
+When functional tests fail, **always check the test results XML files** for detailed error messages and stack traces:
+
+**Location:** `build/test-results/functionalTest/`
+
+Key files:
+- `TEST-com.bitmoxie.monorepochangedprojects.functional.MonorepoPluginFunctionalTest.xml` - Core plugin tests
+- `TEST-com.bitmoxie.monorepochangedprojects.functional.BuildChangedProjectsFunctionalTest.xml` - Build task tests
+
+These XML files contain:
+- Full error messages and assertions
+- Complete stack traces
+- Gradle build output captured during test execution
+- Exact git commands that were executed and their output
+
+**HTML reports** are also available at: `build/reports/tests/functionalTest/index.html`
+
+When debugging:
+1. Read the XML file to see the exact failure message and captured output
+2. Look for git command errors (e.g., "fatal: ambiguous argument")
+3. Check the "Directly changed projects" and "All affected projects" output
+4. Verify file paths and project paths in the output
+
 ## Anti-Patterns to Avoid
 
 ❌ **Don't use `Runtime.exec()`** - Use `ProcessBuilder` instead

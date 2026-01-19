@@ -1,5 +1,7 @@
 package com.bitmoxie.monorepochangedprojects.functional
 
+import com.bitmoxie.monorepochangedprojects.functional.StandardTestProject.Files
+import com.bitmoxie.monorepochangedprojects.functional.StandardTestProject.Projects
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -23,21 +25,10 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
 
     test("buildChangedProjects task builds only affected projects") {
         // Setup
-        val project = TestProjectBuilder(testProjectDir)
-            .withSubproject("common-lib")
-            .withSubproject("service", dependsOn = listOf("common-lib"))
-            .withSubproject("app", dependsOn = listOf("service"))
-            .withSubproject("standalone")
-            .applyPlugin()
-            .withRemote()
-            .build()
-
-        project.initGit()
-        project.commitAll("Initial commit")
-        project.pushToRemote()
+        val project = StandardTestProject.createAndInitialize(testProjectDir)
 
         // Make changes only to common-lib
-        project.appendToFile("common-lib/src/main/kotlin/com/example/Common-lib.kt", "\n// Modified")
+        project.appendToFile(Files.COMMON_LIB_SOURCE, "\n// Modified")
 
         // Execute
         val result = project.runTask("buildChangedProjects")
@@ -45,26 +36,37 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
         // Assert
         result.task(":buildChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
 
-        // Should build common-lib, service, and app (not standalone)
-        result.output shouldContain "Building 3 changed project(s)"
-        result.output shouldContain ":common-lib"
-        result.output shouldContain ":service"
-        result.output shouldContain ":app"
-        result.output shouldNotContain ":standalone"
+        // Should build common-lib and all its dependents (5 projects total)
+        result.output shouldContain "Building 5 changed project(s)"
+        result.output shouldContain Projects.COMMON_LIB
+        result.output shouldContain Projects.MODULE1
+        result.output shouldContain Projects.MODULE2
+        result.output shouldContain Projects.APP1
+        result.output shouldContain Projects.APP2
+    }
+
+    test("buildChangedProjects builds only affected apps when module changes") {
+        // Setup
+        val project = StandardTestProject.createAndInitialize(testProjectDir)
+
+        // Make changes only to module1 (only app1 depends on it)
+        project.appendToFile(Files.MODULE1_SOURCE, "\n// Modified")
+
+        // Execute
+        val result = project.runTask("buildChangedProjects")
+
+        // Assert
+        result.task(":buildChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+
+        result.output shouldContain "Building 2 changed project(s)"
+        result.output shouldContain Projects.MODULE1
+        result.output shouldContain Projects.APP1
+        result.output shouldNotContain Projects.APP2  // app2 doesn't depend on module1
     }
 
     test("buildChangedProjects reports no changes when nothing modified") {
         // Setup
-        val project = TestProjectBuilder(testProjectDir)
-            .withSubproject("common-lib")
-            .withSubproject("service", dependsOn = listOf("common-lib"))
-            .applyPlugin()
-            .withRemote()
-            .build()
-
-        project.initGit()
-        project.commitAll("Initial commit")
-        project.pushToRemote()
+        val project = StandardTestProject.createAndInitialize(testProjectDir)
 
         // Don't make any changes
 
@@ -76,51 +78,29 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
         result.output shouldContain "No projects have changed - nothing to build"
     }
 
-    test("buildChangedProjects handles multiple independent changes") {
+    test("buildChangedProjects handles multiple independent app changes") {
         // Setup
-        val project = TestProjectBuilder(testProjectDir)
-            .withSubproject("lib-a")
-            .withSubproject("lib-b")
-            .withSubproject("app-a", dependsOn = listOf("lib-a"))
-            .withSubproject("app-b", dependsOn = listOf("lib-b"))
-            .applyPlugin()
-            .withRemote()
-            .build()
+        val project = StandardTestProject.createAndInitialize(testProjectDir)
 
-        project.initGit()
-        project.commitAll("Initial commit")
-        project.pushToRemote()
-
-        // Make changes to both lib-a and lib-b
-        project.appendToFile("lib-a/src/main/kotlin/com/example/Lib-a.kt", "\n// Modified A")
-        project.appendToFile("lib-b/src/main/kotlin/com/example/Lib-b.kt", "\n// Modified B")
+        // Make changes to both apps
+        project.appendToFile(Files.APP1_SOURCE, "\n// Modified A")
+        project.appendToFile(Files.APP2_SOURCE, "\n// Modified B")
 
         // Execute
         val result = project.runTask("buildChangedProjects")
 
         // Assert
         result.task(":buildChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
-        result.output shouldContain "Building 4 changed project(s)"
-        result.output shouldContain ":lib-a"
-        result.output shouldContain ":lib-b"
-        result.output shouldContain ":app-a"
-        result.output shouldContain ":app-b"
+        result.output shouldContain "Building 2 changed project(s)"
+        result.output shouldContain Projects.APP1
+        result.output shouldContain Projects.APP2
     }
 
     test("buildChangedProjects runs after detectChangedProjects") {
         // Setup
-        val project = TestProjectBuilder(testProjectDir)
-            .withSubproject("common-lib")
-            .withSubproject("service", dependsOn = listOf("common-lib"))
-            .applyPlugin()
-            .withRemote()
-            .build()
+        val project = StandardTestProject.createAndInitialize(testProjectDir)
 
-        project.initGit()
-        project.commitAll("Initial commit")
-        project.pushToRemote()
-
-        project.appendToFile("common-lib/src/main/kotlin/com/example/Common-lib.kt", "\n// Changed")
+        project.appendToFile(Files.MODULE2_SOURCE, "\n// Changed")
 
         // Execute
         val result = project.runTask("buildChangedProjects")
@@ -132,20 +112,10 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
 
     test("buildChangedProjects builds only leaf project when changed") {
         // Setup
-        val project = TestProjectBuilder(testProjectDir)
-            .withSubproject("common-lib")
-            .withSubproject("service", dependsOn = listOf("common-lib"))
-            .withSubproject("app", dependsOn = listOf("service"))
-            .applyPlugin()
-            .withRemote()
-            .build()
+        val project = StandardTestProject.createAndInitialize(testProjectDir)
 
-        project.initGit()
-        project.commitAll("Initial commit")
-        project.pushToRemote()
-
-        // Make changes only to app
-        project.appendToFile("app/src/main/kotlin/com/example/App.kt", "\n// App changed")
+        // Make changes only to app2
+        project.appendToFile(Files.APP2_SOURCE, "\n// App changed")
 
         // Execute
         val result = project.runTask("buildChangedProjects")
@@ -153,8 +123,10 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
         // Assert
         result.task(":buildChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
         result.output shouldContain "Building 1 changed project(s)"
-        result.output shouldContain ":app"
-        result.output shouldNotContain ":common-lib"
-        result.output shouldNotContain ":service"
+        result.output shouldContain Projects.APP2
+        result.output shouldNotContain Projects.COMMON_LIB
+        result.output shouldNotContain Projects.MODULE1
+        result.output shouldNotContain Projects.MODULE2
+        result.output shouldNotContain Projects.APP1
     }
 })

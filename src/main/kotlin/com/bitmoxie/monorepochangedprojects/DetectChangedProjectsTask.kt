@@ -28,13 +28,16 @@ abstract class DetectChangedProjectsTask : DefaultTask() {
         val metadataMap = metadataFactory.buildProjectMetadataMap(project.rootProject, changedFilesMap)
 
         // Get all affected projects (those with changes OR dependency changes) using recursive hasChanges()
-        // Exclude the root project as it's just a container
+        // Exclude the root project and container projects (projects without build files)
         val allAffectedProjects = metadataMap.values
-            .filter { it.hasChanges() && it.fullyQualifiedName != ":" }
+            .filter { metadata ->
+                metadata.hasChanges() &&
+                metadata.fullyQualifiedName != ":" &&
+                hasBuildFile(project.rootProject, metadata.fullyQualifiedName)
+            }
             .map { it.fullyQualifiedName }
             .toSet()
 
-        logger.lifecycle("Changed files count: ${changedFiles.size}")
         logger.lifecycle("Changed files count: ${changedFiles.size}")
 
         val directlyChangedList = if (directlyChangedProjects.isEmpty()) "" else directlyChangedProjects.joinToString(", ")
@@ -51,5 +54,16 @@ abstract class DetectChangedProjectsTask : DefaultTask() {
         project.extensions.extraProperties.set("changedProjects", allAffectedProjects)
         project.extensions.extraProperties.set("changedProjectsMetadata", metadataMap)
         project.extensions.extraProperties.set("changedFilesMap", changedFilesMap)
+    }
+
+    /**
+     * Checks if a project has a build file (build.gradle or build.gradle.kts).
+     * Projects without build files are just containers and shouldn't be built.
+     */
+    private fun hasBuildFile(rootProject: org.gradle.api.Project, projectPath: String): Boolean {
+        val targetProject = rootProject.findProject(projectPath) ?: return false
+        val projectDir = targetProject.projectDir
+        return projectDir.resolve("build.gradle.kts").exists() ||
+               projectDir.resolve("build.gradle").exists()
     }
 }

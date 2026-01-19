@@ -73,9 +73,11 @@ class GitChangedFilesDetector(private val logger: Logger) {
     private fun getChangedFilesSinceBaseBranch(gitDir: File, baseBranch: String): Set<String> {
         // Compare committed changes between base branch and HEAD
         return try {
+            // If baseBranch already includes "origin/", don't add it again
+            val branchRef = if (baseBranch.startsWith("origin/")) baseBranch else "origin/$baseBranch"
             gitExecutor.executeForOutput(
                 gitDir,
-                "diff", "--name-only", "origin/$baseBranch...HEAD"
+                "diff", "--name-only", "$branchRef...HEAD"
             ).toSet()
         } catch (e: Exception) {
             // If origin/ doesn't work, try local branch comparison

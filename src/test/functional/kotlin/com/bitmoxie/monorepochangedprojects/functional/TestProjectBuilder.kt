@@ -67,7 +67,10 @@ class TestProjectBuilder(private val projectDir: File) {
         val settingsContent = buildString {
             appendLine("rootProject.name = \"test-project\"")
             subprojects.forEach { subproject ->
-                appendLine("include(\":${subproject.name}\")")
+                // Convert path separators to Gradle project notation
+                // e.g., "modules/module1" becomes ":modules:module1"
+                val gradlePath = subproject.name.replace("/", ":")
+                appendLine("include(\":$gradlePath\")")
             }
         }
         File(projectDir, "settings.gradle.kts").writeText(settingsContent)
@@ -86,7 +89,9 @@ class TestProjectBuilder(private val projectDir: File) {
                 if (subproject.dependencies.isNotEmpty()) {
                     appendLine("dependencies {")
                     subproject.dependencies.forEach { dep ->
-                        appendLine("    implementation(project(\":$dep\"))")
+                        // Convert path to Gradle project notation
+                        val gradlePath = dep.replace("/", ":")
+                        appendLine("    implementation(project(\":$gradlePath\"))")
                     }
                     appendLine("}")
                 }
@@ -96,12 +101,13 @@ class TestProjectBuilder(private val projectDir: File) {
             // Create source directory and sample file
             val srcDir = File(subprojectDir, "src/main/kotlin/com/example")
             srcDir.mkdirs()
-            val className = subproject.name.replaceFirstChar { it.uppercase() }
-            File(srcDir, "$className.kt").writeText(
+            // Use just the last part of the path for the class name (e.g., "Module1" from "modules/module1")
+            val simpleClassName = subproject.name.split("/").last().replaceFirstChar { it.uppercase() }
+            File(srcDir, "$simpleClassName.kt").writeText(
                 """
                 package com.example
                 
-                class $className {
+                class $simpleClassName {
                     fun doSomething() = "Hello from ${subproject.name}"
                 }
                 """.trimIndent()
