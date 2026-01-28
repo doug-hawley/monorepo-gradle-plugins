@@ -54,7 +54,7 @@ jobs:
 
       - name: Upload test reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: test-reports-${{ matrix.os }}-java${{ matrix.java-version }}
           path: |
@@ -64,7 +64,7 @@ jobs:
 
       - name: Upload build artifacts
         if: matrix.os == 'ubuntu-latest' && matrix.java-version == '17'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: plugin-jar
           path: build/libs/*.jar
