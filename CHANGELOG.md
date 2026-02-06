@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1](https://github.com/Perulish8/monorepo-changed-projects-plugin/compare/v1.0.0...v1.0.1) (2026-02-06)
+
+
+### Bug Fixes
+
+* Update github action for release publishing ([241bcbb](https://github.com/Perulish8/monorepo-changed-projects-plugin/commit/241bcbb907ad7d96319d88efcd3b33e41eb31cd4))
+* Update gradle publishing configuration ([c52b6e8](https://github.com/Perulish8/monorepo-changed-projects-plugin/commit/c52b6e85ef3c77988f0483c4c6438286003bafc4))
+* Update plugin ID to com.bitmoxie.monorepo-changed-projects-plugin ([dacd343](https://github.com/Perulish8/monorepo-changed-projects-plugin/commit/dacd343d54991d926c5cc6d7feeeee1518672a11))
+
+
+### Continuous Integration
+
+* Introduce release please ([4bdc2bc](https://github.com/Perulish8/monorepo-changed-projects-plugin/commit/4bdc2bcdbf954c92bfad64704fa48a5eb8209100))
+
 ## [Unreleased]
 
 ### Added
