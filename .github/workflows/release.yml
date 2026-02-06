@@ -28,7 +28,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v5
 
       - name: Extract version from tag
         id: get_version
@@ -90,7 +90,7 @@ jobs:
   #         distribution: 'temurin'
   #
   #     - name: Setup Gradle
-  #       uses: gradle/actions/setup-gradle@v3
+  #       uses: gradle/actions/setup-gradle@v5
   #
   #     - name: Publish to Plugin Portal
   #       env:
