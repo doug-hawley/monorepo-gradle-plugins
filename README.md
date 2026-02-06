@@ -396,6 +396,15 @@ Tests are written using [Kotest](https://kotest.io/) with the FunSpec style:
 ./gradlew publishToMavenLocal
 ```
 
+## Publishing to Gradle Plugin Portal
+
+This plugin is ready to be published to the Gradle Plugin Portal. See [PUBLISHING_GUIDE.md](PUBLISHING_GUIDE.md) for complete instructions on:
+- Getting your Plugin Portal credentials
+- Configuring GitHub secrets
+- Publishing via Release Please (automated)
+- Publishing via manual tag release
+- Post-publishing verification
+
 ## Contributing
 
 This project uses [Release Please](https://github.com/googleapis/release-please) for automated releases and [Conventional Commits](https://www.conventionalcommits.org/) for commit messages.

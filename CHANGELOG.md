@@ -10,10 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Release automation** - Integrated Release Please for automated releases based on Conventional Commits
 - `RELEASE_PLEASE_GUIDE.md` - Comprehensive guide for using Release Please and Conventional Commits
+- `PUBLISHING_GUIDE.md` - Complete guide for publishing to Gradle Plugin Portal with step-by-step instructions
 - `.github/workflows/release-please.yml` - GitHub Action workflow for automated releases
 - `release-please-config.json` - Release Please configuration
 - `.release-please-manifest.json` - Version tracking for Release Please
 - **Gradle Plugin Publish plugin** - Added `com.gradle.plugin-publish` plugin (v1.3.0) for compliance with modern Gradle plugin development practices and Plugin Portal publishing
+- **Publishing enabled** - Activated publish-plugin job in release.yml workflow for automatic Plugin Portal publishing
 
 ### Changed
 - **Updated dependencies** - Updated Kotest from 5.8.0 to 5.9.1 and Gradle wrapper from 8.5 to 8.12
