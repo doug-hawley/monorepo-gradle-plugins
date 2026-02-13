@@ -27,7 +27,16 @@ class MonorepoChangedProjectsPlugin : Plugin<Project> {
             dependsOn("detectChangedProjects")
 
             doLast {
-                val changedProjects = project.extensions.extraProperties.get("changedProjects") as Set<String>
+                // Safe cast to handle missing, null, or wrong-type property
+                val changedProjectsRaw = project.extensions.extraProperties.get("changedProjects") as? Set<*>
+                if (changedProjectsRaw == null) {
+                    project.logger.lifecycle("No changed projects data available")
+                    return@doLast
+                }
+
+                // Filter to ensure all elements are Strings
+                @Suppress("UNCHECKED_CAST")
+                val changedProjects = changedProjectsRaw.filterIsInstance<String>().toSet()
 
                 if (changedProjects.isEmpty()) {
                     project.logger.lifecycle("No projects have changed - nothing to build")
