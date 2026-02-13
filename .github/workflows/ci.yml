@@ -116,9 +116,9 @@ jobs:
 
       - name: Verify published artifact
         run: |
-          if [ -d ~/.m2/repository/com/bitmoxie/monorepo-changed-projects-plugin ]; then
+          if [ -d ~/.m2/repository/io/github/doug-hawley/monorepo-changed-projects-plugin ]; then
             echo "✅ Plugin published successfully to Maven Local"
-            ls -la ~/.m2/repository/com/bitmoxie/monorepo-changed-projects-plugin/
+            ls -la ~/.m2/repository/io/github/doug-hawley/monorepo-changed-projects-plugin/
           else
             echo "❌ Plugin not found in Maven Local"
             exit 1
