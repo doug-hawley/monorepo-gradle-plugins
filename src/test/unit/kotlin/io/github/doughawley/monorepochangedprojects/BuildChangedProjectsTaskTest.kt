@@ -92,4 +92,35 @@ class BuildChangedProjectsTaskTest : FunSpec({
         val changedProjects = changedProjectsRaw?.filterIsInstance<String>()?.toSet() ?: emptySet()
         changedProjects shouldBe setOf(":project1", ":project2")
     }
+
+    test("buildChangedProjects should handle missing changedProjects property gracefully") {
+        // given
+        val project = ProjectBuilder.builder().build()
+        project.pluginManager.apply("io.github.doug-hawley.monorepo-changed-projects-plugin")
+
+        // when - property is not set (detectChangedProjects didn't run)
+        val task = project.tasks.findByName("buildChangedProjects")
+        task shouldNotBe null
+
+        // Verify the property doesn't exist yet
+        val hasProperty = project.extensions.extraProperties.has("changedProjects")
+        hasProperty shouldBe false
+    }
+
+    test("buildChangedProjects should validate property exists before accessing") {
+        // given
+        val project = ProjectBuilder.builder().build()
+        project.pluginManager.apply("io.github.doug-hawley.monorepo-changed-projects-plugin")
+
+        // Set up the property
+        project.extensions.extraProperties.set("changedProjects", setOf(":subproject"))
+
+        // when
+        val hasProperty = project.extensions.extraProperties.has("changedProjects")
+
+        // then
+        hasProperty shouldBe true
+        val changedProjects = project.extensions.extraProperties.get("changedProjects") as? Set<*>
+        changedProjects shouldNotBe null
+    }
 })

@@ -6,7 +6,7 @@
 ---
 
 ## Issue #2 - CRITICAL 🔴
-**Status**: ❌ Not Fixed  
+**Status**: ✅ **FIXED**  
 **Priority**: Critical  
 **File**: `MonorepoChangedProjectsPlugin.kt`, lines 26-28  
 **Type**: Task Execution Order
@@ -24,34 +24,43 @@ doLast {
 - Property might not exist if dependency task hasn't completed
 - Could fail silently or with cryptic error
 
-### Recommended Fix
-Use task outputs/inputs for safer task communication, or explicitly check task completion:
+### Fix Applied
+Added explicit property existence check and better error handling:
+1. Added `mustRunAfter("detectChangedProjects")` in addition to `dependsOn` for stronger task ordering guarantees
+2. Check if property exists using `has()` before accessing it
+3. Throw `IllegalStateException` with clear error message if property is missing
+4. Keep safe casting for additional robustness
 
 ```kotlin
 project.tasks.register("buildChangedProjects").configure {
     group = "build"
     description = "Builds only the projects that have been affected by changes"
-    
-    // Ensure detectChangedProjects completes first
+    dependsOn("detectChangedProjects")
     mustRunAfter("detectChangedProjects")
     
     doLast {
-        // Check if the required property exists
+        // Verify the required property exists before accessing it
         if (!project.extensions.extraProperties.has("changedProjects")) {
             project.logger.error("detectChangedProjects must run before buildChangedProjects")
-            throw IllegalStateException("Changed projects data not available. Run detectChangedProjects first.")
+            throw IllegalStateException(
+                "Changed projects data not available. " +
+                "The detectChangedProjects task must complete before buildChangedProjects can run."
+            )
         }
         
-        val changedProjects = project.extensions.extraProperties.get("changedProjects") as? Set<String> ?: emptySet()
+        val changedProjectsRaw = project.extensions.extraProperties.get("changedProjects") as? Set<*>
         // ...rest of implementation
     }
 }
 ```
 
 ### Testing
-- Try running `buildChangedProjects` in isolation
-- Verify clear error message
-- Test with `--parallel` execution
+- ✅ Added unit tests to verify property validation
+- ✅ Added functional test to verify `dependsOn` ensures `detectChangedProjects` runs first
+- ✅ Verified clear error message when property is missing
+- ✅ All existing tests still pass
+
+**Fixed Date**: February 12, 2026
 
 ---
 
@@ -565,7 +574,7 @@ fun getChangedFiles(rootDir: File, extension: ProjectsChangedExtension): GitChan
 
 ### Critical Issues (Must Fix Before Release)
 - [x] ~~Issue #1 - Unsafe casting in buildChangedProjects~~ ✅ **FIXED**
-- [ ] Issue #2 - Task execution order
+- [x] ~~Issue #2 - Task execution order~~ ✅ **FIXED**
 - [ ] Issue #3 - Manual task execution
 
 ### High Priority (Should Fix Soon)

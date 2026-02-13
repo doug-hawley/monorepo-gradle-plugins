@@ -210,4 +210,31 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
             Projects.APP2
         )
     }
+
+    test("buildChangedProjects automatically runs detectChangedProjects due to dependsOn") {
+        // This test validates Issue #2 fix - that property is available when buildChangedProjects runs
+        // Setup
+        val project = testProjectListener.createStandardProject()
+
+        // Make a change
+        project.appendToFile(Files.APP1_SOURCE, "\n// Change")
+        project.commitAll("Change app1")
+
+        // Execute buildChangedProjects WITHOUT explicitly running detectChangedProjects first
+        // The dependsOn relationship should ensure detectChangedProjects runs first
+        val result = project.runTask("buildChangedProjects")
+
+        // Assert
+        // Both tasks should have run successfully
+        result.task(":detectChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":buildChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+
+        // The property should have been available (no error about missing property)
+        result.output shouldContain "Building 1 changed project(s)"
+        result.output shouldContain Projects.APP1
+        result.output shouldNotContain "Changed projects data not available"
+        result.output shouldNotContain "detectChangedProjects must run before buildChangedProjects"
+    }
 })
+
+
