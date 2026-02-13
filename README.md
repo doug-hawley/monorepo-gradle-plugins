@@ -109,7 +109,7 @@ tasks.register("showChangedFiles") {
         }
         
         // Get enhanced metadata with dependencies and changed files
-        val metadataMap = project.extensions.extraProperties.get("changedProjectsMetadata") as Map<String, com.bitmoxie.monorepochangedprojects.domain.ProjectMetadata>
+        val metadataMap = project.extensions.extraProperties.get("changedProjectsMetadata") as Map<String, io.github.doughawley.monorepochangedprojects.domain.ProjectMetadata>
         
         metadataMap.values.forEach { metadata ->
             // hasChanges() returns true if project has direct changes OR dependency changes
@@ -129,8 +129,8 @@ tasks.register("showChangedFiles") {
 The plugin provides a `ChangedProjects` domain object for convenient access to changed project information:
 
 ```kotlin
-import com.bitmoxie.monorepochangedprojects.domain.ChangedProjects
-import com.bitmoxie.monorepochangedprojects.domain.ProjectMetadata
+import io.github.doughawley.monorepochangedprojects.domain.ChangedProjects
+import io.github.doughawley.monorepochangedprojects.domain.ProjectMetadata
 
 tasks.register("analyzeWithChangedProjects") {
     dependsOn("detectChangedProjects")
@@ -249,8 +249,8 @@ tasks.register("ciTest") {
 Use prefix filtering to build only changed applications:
 
 ```kotlin
-import com.bitmoxie.monorepochangedprojects.domain.ChangedProjects
-import com.bitmoxie.monorepochangedprojects.domain.ProjectMetadata
+import io.github.doughawley.monorepochangedprojects.domain.ChangedProjects
+import io.github.doughawley.monorepochangedprojects.domain.ProjectMetadata
 
 tasks.register("buildChangedApps") {
     dependsOn("detectChangedProjects")

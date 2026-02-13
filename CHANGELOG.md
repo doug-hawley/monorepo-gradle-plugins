@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Group ID** - Updated to `io.github.doug-hawley` to align with GitHub-based plugin ID namespace
 - **GitHub username** - Updated all references from `perulish8` to `doug-hawley` following GitHub username change
 - **Repository URLs** - Updated all GitHub URLs to reflect new username `doug-hawley`
+- **Package structure** - Repackaged from `com.bitmoxie.monorepochangedprojects` to `io.github.doughawley.monorepochangedprojects` to align with group ID
 - **README.md** - Restructured to focus on users of the plugin rather than developers; moved development instructions to CONTRIBUTING.md
 
 ### Fixed
@@ -51,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### BREAKING CHANGES
 - **Project renamed** from `projects-changed-plugin` to `monorepo-changed-projects-plugin`
 - **Plugin ID changed** from `com.bitmoxie.projects-changed` to `io.github.doug-hawley.monorepo-changed-projects-plugin` (using GitHub-based namespace for easier verification)
-- **Package renamed** from `com.bitmoxie.projectschanged` to `com.bitmoxie.monorepochangedprojects`
+- **Package renamed** from `com.bitmoxie.projectschanged` to `io.github.doughawley.monorepochangedprojects` to align with group ID
 - **Main class renamed** from `ProjectsChangedPlugin` to `MonorepoChangedProjectsPlugin`
 - **Migrated tests** from JUnit to Kotest
 

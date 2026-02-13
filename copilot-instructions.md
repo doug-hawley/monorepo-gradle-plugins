@@ -114,11 +114,11 @@ class MyFeatureTest : FunSpec({
 
 ```
 src/
-├── main/kotlin/com/bitmoxie/monorepochangedprojects/
+├── main/kotlin/io/github/doughawley/monorepochangedprojects/
 │   ├── MonorepoChangedProjectsPlugin.kt    # Main plugin entry point
 │   ├── DetectChangedProjectsTask.kt        # Core task implementation
 │   └── ProjectsChangedExtension.kt         # Configuration DSL
-└── test/kotlin/com/bitmoxie/monorepochangedprojects/
+└── test/kotlin/io/github/doughawley/monorepochangedprojects/
     └── MonorepoChangedProjectsPluginTest.kt    # Kotest-based tests
 ```
 
@@ -241,8 +241,8 @@ When functional tests fail, **always check the test results XML files** for deta
 **Location:** `build/test-results/functionalTest/`
 
 Key files:
-- `TEST-com.bitmoxie.monorepochangedprojects.functional.MonorepoPluginFunctionalTest.xml` - Core plugin tests
-- `TEST-com.bitmoxie.monorepochangedprojects.functional.BuildChangedProjectsFunctionalTest.xml` - Build task tests
+- `TEST-io.github.doughawley.monorepochangedprojects.functional.MonorepoPluginFunctionalTest.xml` - Core plugin tests
+- `TEST-io.github.doughawley.monorepochangedprojects.functional.BuildChangedProjectsFunctionalTest.xml` - Build task tests
 
 These XML files contain:
 - Full error messages and assertions

@@ -183,9 +183,9 @@ cat build/pluginDescriptors/io.github.doug-hawley.monorepo-changed-projects-plug
 
 ### Keep the Code Package Names
 Even though the plugin ID changed to `io.github.doug-hawley.*`, you can keep:
-- Package: `com.bitmoxie.monorepochangedprojects`
+- Package: `io.github.doughawley.monorepochangedprojects`
 - Group: `io.github.doug-hawley`
-- Implementation class: `com.bitmoxie.monorepochangedprojects.MonorepoChangedProjectsPlugin`
+- Implementation class: `io.github.doughawley.monorepochangedprojects.MonorepoChangedProjectsPlugin`
 
 **Only the plugin ID needs to match your GitHub username.**
 

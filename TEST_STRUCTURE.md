@@ -8,13 +8,13 @@ This project uses separate source sets for different types of tests.
 src/test/
 ├── unit/
 │   └── kotlin/
-│       └── com/bitmoxie/monorepochangedprojects/
+│       └── io/github/doughawley/monorepochangedprojects/
 │           ├── domain/
 │           ├── git/
 │           └── ... (unit test files)
 └── functional/
     └── kotlin/
-        └── com/bitmoxie/monorepochangedprojects/
+        └── io/github/doughawley/monorepochangedprojects/
             └── ... (functional test files)
 ```
 
@@ -86,13 +86,13 @@ Functional tests automatically run after unit tests when using `check`.
 ### Adding a Unit Test
 Create your test file in:
 ```
-src/test/unit/kotlin/com/bitmoxie/monorepochangedprojects/YourTest.kt
+src/test/unit/kotlin/io/github/doughawley/monorepochangedprojects/YourTest.kt
 ```
 
 ### Adding a Functional Test
 Create your test file in:
 ```
-src/test/functional/kotlin/com/bitmoxie/monorepochangedprojects/YourFunctionalTest.kt
+src/test/functional/kotlin/io/github/doughawley/monorepochangedprojects/YourFunctionalTest.kt
 ```
 
 ## Test Configuration

@@ -41,7 +41,7 @@ tasks.register("analyzeChanges") {
     dependsOn("detectChangedProjects")
     doLast {
         val metadataMap = project.extensions.extraProperties
-            .get("changedProjectsMetadata") as Map<String, com.bitmoxie.monorepochangedprojects.domain.ProjectMetadata>
+            .get("changedProjectsMetadata") as Map<String, io.github.doughawley.monorepochangedprojects.domain.ProjectMetadata>
 
         println("Detailed change analysis:")
         metadataMap.values
@@ -94,7 +94,7 @@ tasks.register("impactReport") {
     dependsOn("detectChangedProjects")
     doLast {
         val metadataMap = project.extensions.extraProperties
-            .get("changedProjectsMetadata") as Map<String, com.bitmoxie.monorepochangedprojects.domain.ProjectMetadata>
+            .get("changedProjectsMetadata") as Map<String, io.github.doughawley.monorepochangedprojects.domain.ProjectMetadata>
 
         val report = StringBuilder()
         report.appendLine("=" .repeat(80))

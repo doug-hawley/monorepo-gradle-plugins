@@ -96,7 +96,7 @@ gradlePlugin {
     plugins {
         register("monorepoChangedProjectsPlugin") {
             id = "io.github.doug-hawley.monorepo-changed-projects-plugin"
-            implementationClass = "com.bitmoxie.monorepochangedprojects.MonorepoChangedProjectsPlugin"
+            implementationClass = "io.github.doughawley.monorepochangedprojects.MonorepoChangedProjectsPlugin"
             displayName = "Monorepo Changed Projects Plugin"
             description = "A Gradle plugin to detect changed projects in a monorepo based on git history"
             tags = listOf("monorepo", "git", "ci", "optimization", "build")
