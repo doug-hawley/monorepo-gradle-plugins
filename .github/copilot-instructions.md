@@ -13,7 +13,8 @@ Gradle plugin in Kotlin that detects changed projects based on git history for o
 - **Minimal documentation**: Only update README.md and CHANGELOG.md as needed
 - **No status reports**: Don't create migration guides, scan reports, or summary files
 - **Let the code speak**: Use clear naming and KDoc instead of separate documentation files
-- **No completion files**: Never create files like `USERNAME_UPDATE_COMPLETE.md`, `SUMMARY.md`, or similar status/summary files at the end of tasks. Use the show_content tool to display summaries to the user instead.
+- **No completion files**: Never create files like `USERNAME_UPDATE_COMPLETE.md`, `SUMMARY.md`, `CODE_CHANGES.md`, `CONFIGURATION_PHASE_CHANGES.md`, `IMPLEMENTATION_SUMMARY.md`, or similar status/summary/documentation files at the end of tasks. Use the show_content tool to display summaries to the user instead.
+- **Never create documentation files**: Do not create files documenting code changes, implementation details, or migration steps. If the user needs a summary, use show_content to display it directly.
 
 ## Code Style and Standards
 
@@ -234,29 +235,63 @@ Before submitting changes, verify:
 - [ ] CHANGELOG.md has an entry for the change (version history only)
 - [ ] No unnecessary documentation files were created
 
+## Terminal Command Workarounds
+
+Terminal commands frequently hang or don't return output. **Use the `read_file` tool to directly read test report files - this is faster and more reliable than running terminal commands.**
+
+### Verifying Tests - CORRECT APPROACH
+
+**Use `read_file` tool to read test reports directly:**
+
+```
+read_file build/reports/tests/functionalTest/index.html
+```
+
+Then look for:
+- Test count: `<div class="counter">21</div>` under "tests"
+- Failures: `<div class="counter">0</div>` under "failures"  
+- Success rate: `<div class="percent">100%</div>`
+
+### If You Must Run Commands
+
+**Only if test reports don't exist yet and you need to run tests:**
+
+```bash
+# Let the user run it, or use run_in_terminal with isBackground=true
+# Then check file modification time to see when tests completed:
+stat build/reports/tests/functionalTest/index.html
+```
+
+### Decision Making Rules
+
+**ALWAYS:**
+- Use `read_file` to read test report HTML/XML files directly
+- Check `build/reports/tests/*/index.html` for test results
+- Verify compilation by checking if `build/classes/` contains files
+- Check artifacts exist: `ls -la build/libs/*.jar`
+
+**NEVER:**
+- Rely on terminal stdout from gradle commands
+- Assume success from empty output
+- Wait for terminal commands that may hang
+
 ## Debugging Functional Tests
 
-When functional tests fail, **always check the test results XML files** for detailed error messages and stack traces:
+When functional tests fail, **always check the test results files** for detailed error messages:
 
-**Location:** `build/test-results/functionalTest/`
+**Primary:** `build/reports/tests/functionalTest/index.html` - Shows pass/fail counts and percentages
+**Details:** `build/test-results/functionalTest/TEST-*.xml` - Contains full error messages and stack traces
 
 Key files:
 - `TEST-io.github.doughawley.monorepochangedprojects.functional.MonorepoPluginFunctionalTest.xml` - Core plugin tests
 - `TEST-io.github.doughawley.monorepochangedprojects.functional.BuildChangedProjectsFunctionalTest.xml` - Build task tests
 
-These XML files contain:
-- Full error messages and assertions
-- Complete stack traces
-- Gradle build output captured during test execution
-- Exact git commands that were executed and their output
-
-**HTML reports** are also available at: `build/reports/tests/functionalTest/index.html`
-
 When debugging:
-1. Read the XML file to see the exact failure message and captured output
-2. Look for git command errors (e.g., "fatal: ambiguous argument")
-3. Check the "Directly changed projects" and "All affected projects" output
-4. Verify file paths and project paths in the output
+1. **First check HTML report** for overall pass/fail status
+2. Read the XML file to see exact failure messages and captured output
+3. Look for git command errors (e.g., "fatal: ambiguous argument")
+4. Check the "Directly changed projects" and "All affected projects" output
+5. Verify file paths and project paths in the output
 
 ## Anti-Patterns to Avoid
 

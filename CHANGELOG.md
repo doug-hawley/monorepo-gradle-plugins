@@ -50,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Windows test name compatibility** - Fixed `TestProjectListener` to sanitize test names before using them in temporary directory paths, preventing `InvalidPathException` on Windows when test names contain illegal path characters like colons
 - **Release Please configuration** - Fixed `release-please-config.json` to use `generic` type instead of unsupported `gradle` type for version file updates
 - **CI workflow** - Fixed Maven Local path verification in CI to match new group ID (`io.github.doug-hawley`)
+- **buildChangedProjects task safety** - Fixed unsafe casting in `buildChangedProjects` task to gracefully handle missing, null, or incorrectly-typed `changedProjects` property, preventing runtime crashes
 
 ### BREAKING CHANGES
 - **Project renamed** from `projects-changed-plugin` to `monorepo-changed-projects-plugin`

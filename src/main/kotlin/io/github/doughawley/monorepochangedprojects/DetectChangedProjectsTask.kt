@@ -5,40 +5,47 @@ import org.gradle.api.tasks.TaskAction
 
 /**
  * Task that detects which projects have changed based on git history and dependency analysis.
+ *
+ * This task reads pre-computed metadata from the configuration phase and outputs the results.
+ * Metadata computation happens during gradle.afterEvaluate to ensure all project dependencies
+ * are fully resolved.
  */
 abstract class DetectChangedProjectsTask : DefaultTask() {
 
-    private val gitDetector by lazy { GitChangedFilesDetector(logger) }
-    private val projectMapper by lazy { ProjectFileMapper() }
-    private val metadataFactory by lazy { ProjectMetadataFactory(logger) }
-
     @TaskAction
     fun detectChanges() {
-        val extension = project.extensions.getByType(ProjectsChangedExtension::class.java)
+        val extension = project.rootProject.extensions.getByType(ProjectsChangedExtension::class.java)
+
+        // If metadata wasn't computed in configuration phase (e.g., in unit tests),
+        // compute it now as a fallback
+        if (!extension.metadataComputed) {
+            logger.warn("Metadata was not computed in configuration phase. Computing now (this may indicate a test environment).")
+            val plugin = project.plugins.findPlugin(MonorepoChangedProjectsPlugin::class.java)
+            if (plugin != null) {
+                plugin.computeMetadata(project.rootProject, extension)
+                extension.metadataComputed = true
+            } else {
+                throw IllegalStateException(
+                    "Changed project metadata was not computed and plugin instance not found. " +
+                    "This indicates a plugin initialization error."
+                )
+            }
+        }
 
         logger.lifecycle("Detecting changed projects...")
         logger.lifecycle("Base branch: ${extension.baseBranch}")
         logger.lifecycle("Include untracked: ${extension.includeUntracked}")
 
-        val changedFiles = gitDetector.getChangedFiles(project.rootDir, extension)
-        val changedFilesMap = projectMapper.mapChangedFilesToProjects(project.rootProject, changedFiles)
+        // Read pre-computed metadata from configuration phase
+        val metadataMap = extension.metadataMap
+        val allAffectedProjects = extension.allAffectedProjects
+        val changedFilesMap = extension.changedFilesMap
         val directlyChangedProjects = changedFilesMap.keys
 
-        // Build metadata with changed files information
-        val metadataMap = metadataFactory.buildProjectMetadataMap(project.rootProject, changedFilesMap)
+        // Count total changed files
+        val totalChangedFiles = changedFilesMap.values.flatten().toSet().size
 
-        // Get all affected projects (those with changes OR dependency changes) using recursive hasChanges()
-        // Exclude the root project and container projects (projects without build files)
-        val allAffectedProjects = metadataMap.values
-            .filter { metadata ->
-                metadata.hasChanges() &&
-                metadata.fullyQualifiedName != ":" &&
-                hasBuildFile(project.rootProject, metadata.fullyQualifiedName)
-            }
-            .map { it.fullyQualifiedName }
-            .toSet()
-
-        logger.lifecycle("Changed files count: ${changedFiles.size}")
+        logger.lifecycle("Changed files count: $totalChangedFiles")
 
         val directlyChangedList = if (directlyChangedProjects.isEmpty()) "" else directlyChangedProjects.joinToString(", ")
         logger.lifecycle("Directly changed projects: $directlyChangedList")
@@ -50,20 +57,9 @@ abstract class DetectChangedProjectsTask : DefaultTask() {
             logger.lifecycle("No projects have changed")
         }
 
-        // Store results in project extra properties for other tasks to use
+        // Store results in project extra properties for backward compatibility
         project.extensions.extraProperties.set("changedProjects", allAffectedProjects)
         project.extensions.extraProperties.set("changedProjectsMetadata", metadataMap)
         project.extensions.extraProperties.set("changedFilesMap", changedFilesMap)
-    }
-
-    /**
-     * Checks if a project has a build file (build.gradle or build.gradle.kts).
-     * Projects without build files are just containers and shouldn't be built.
-     */
-    private fun hasBuildFile(rootProject: org.gradle.api.Project, projectPath: String): Boolean {
-        val targetProject = rootProject.findProject(projectPath) ?: return false
-        val projectDir = targetProject.projectDir
-        return projectDir.resolve("build.gradle.kts").exists() ||
-               projectDir.resolve("build.gradle").exists()
     }
 }
