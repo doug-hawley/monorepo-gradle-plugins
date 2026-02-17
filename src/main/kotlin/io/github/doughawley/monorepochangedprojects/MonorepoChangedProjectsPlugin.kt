@@ -7,12 +7,49 @@ import org.gradle.api.Project
  * Gradle plugin that detects which projects have changed based on git history.
  */
 class MonorepoChangedProjectsPlugin : Plugin<Project> {
+
+    companion object {
+        private const val COMPUTED_FLAG_KEY = "monorepoChangedProjects.metadataComputed"
+    }
+
     override fun apply(project: Project) {
-        // Register the extension
-        project.extensions.create(
-            "projectsChanged",
-            ProjectsChangedExtension::class.java
-        )
+        // Register the extension on the root project to ensure it's shared
+        val rootExtension = if (project == project.rootProject) {
+            project.extensions.create(
+                "projectsChanged",
+                ProjectsChangedExtension::class.java
+            )
+        } else {
+            // If applied to subproject, get or create extension on root
+            project.rootProject.extensions.findByType(ProjectsChangedExtension::class.java)
+                ?: project.rootProject.extensions.create(
+                    "projectsChanged",
+                    ProjectsChangedExtension::class.java
+                )
+        }
+
+        // Compute metadata in configuration phase after ALL projects are evaluated
+        // Use gradle.projectsEvaluated to ensure all subprojects are configured
+        // Use a flag on the gradle instance to ensure this only runs once
+        project.gradle.projectsEvaluated {
+            val computed = project.gradle.extensions.extraProperties.has(COMPUTED_FLAG_KEY)
+            if (!computed) {
+                // Mark as computed before running to prevent re-entry
+                project.gradle.extensions.extraProperties.set(COMPUTED_FLAG_KEY, true)
+
+                try {
+                    computeMetadata(project.rootProject, rootExtension)
+                    rootExtension.metadataComputed = true
+                    project.logger.debug("Changed project metadata computed successfully in configuration phase")
+                } catch (e: Exception) {
+                    // Fail-fast: metadata computation is critical
+                    throw IllegalStateException(
+                        "Failed to compute changed project metadata in configuration phase: ${e.message}",
+                        e
+                    )
+                }
+            }
+        }
 
         // Register the detectChangedProjects task
         project.tasks.register("detectChangedProjects", DetectChangedProjectsTask::class.java).configure {
@@ -28,25 +65,17 @@ class MonorepoChangedProjectsPlugin : Plugin<Project> {
             mustRunAfter("detectChangedProjects")
 
             doLast {
-                // Verify the required property exists before accessing it
-                if (!project.extensions.extraProperties.has("changedProjects")) {
-                    project.logger.error("detectChangedProjects must run before buildChangedProjects")
+                val extension = project.rootProject.extensions.getByType(ProjectsChangedExtension::class.java)
+
+                // Fail-fast if metadata wasn't computed
+                if (!extension.metadataComputed) {
                     throw IllegalStateException(
-                        "Changed projects data not available. " +
-                        "The detectChangedProjects task must complete before buildChangedProjects can run."
+                        "Changed project metadata was not computed in configuration phase. " +
+                        "This indicates a plugin initialization error."
                     )
                 }
 
-                // Safe cast to handle null or wrong-type property
-                val changedProjectsRaw = project.extensions.extraProperties.get("changedProjects") as? Set<*>
-                if (changedProjectsRaw == null) {
-                    project.logger.lifecycle("No changed projects data available")
-                    return@doLast
-                }
-
-                // Filter to ensure all elements are Strings
-                @Suppress("UNCHECKED_CAST")
-                val changedProjects = changedProjectsRaw.filterIsInstance<String>().toSet()
+                val changedProjects = extension.allAffectedProjects
 
                 if (changedProjects.isEmpty()) {
                     project.logger.lifecycle("No projects have changed - nothing to build")
@@ -79,4 +108,64 @@ class MonorepoChangedProjectsPlugin : Plugin<Project> {
 
         project.logger.lifecycle("Projects Changed Plugin applied to ${project.name}")
     }
+
+    /**
+     * Computes changed project metadata.
+     * Called during task execution to ensure all dependencies are fully resolved.
+     *
+     * @param project The Gradle project
+     * @param extension The plugin extension
+     */
+    internal fun computeMetadata(project: Project, extension: ProjectsChangedExtension) {
+        val logger = project.logger
+
+        logger.lifecycle("Computing changed project metadata...")
+        logger.lifecycle("Base branch: ${extension.baseBranch}")
+        logger.lifecycle("Include untracked: ${extension.includeUntracked}")
+
+        // Initialize detectors and factories
+        val gitDetector = GitChangedFilesDetector(logger)
+        val projectMapper = ProjectFileMapper()
+        val metadataFactory = ProjectMetadataFactory(logger)
+
+        // Detect changed files from git
+        val changedFiles = gitDetector.getChangedFiles(project.rootDir, extension)
+        val changedFilesMap = projectMapper.mapChangedFilesToProjects(project.rootProject, changedFiles)
+
+        // Build metadata with changed files information
+        val metadataMap = metadataFactory.buildProjectMetadataMap(project.rootProject, changedFilesMap)
+
+        // Get all affected projects (those with changes OR dependency changes)
+        val allAffectedProjects = metadataMap.values
+            .filter { metadata ->
+                metadata.hasChanges() &&
+                metadata.fullyQualifiedName != ":" &&
+                hasBuildFile(project.rootProject, metadata.fullyQualifiedName)
+            }
+            .map { it.fullyQualifiedName }
+            .toSet()
+
+        // Store in extension for access during configuration and execution
+        extension.metadataMap = metadataMap
+        extension.allAffectedProjects = allAffectedProjects
+        extension.changedFilesMap = changedFilesMap
+
+        logger.lifecycle("Changed files count: ${changedFiles.size}")
+        logger.lifecycle("All affected projects (including dependents): ${allAffectedProjects.joinToString(", ").ifEmpty { "none" }}")
+    }
+
+    /**
+     * Checks if a project has a build file (build.gradle or build.gradle.kts).
+     */
+    private fun hasBuildFile(rootProject: Project, projectPath: String): Boolean {
+        val targetProject = rootProject.findProject(projectPath) ?: return false
+        val projectDir = targetProject.projectDir
+        return projectDir.resolve("build.gradle.kts").exists() ||
+               projectDir.resolve("build.gradle").exists()
+    }
 }
+
+
+
+
+

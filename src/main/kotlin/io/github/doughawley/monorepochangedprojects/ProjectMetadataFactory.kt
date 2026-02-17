@@ -31,7 +31,7 @@ class ProjectMetadataFactory(private val logger: Logger) {
         }
 
         // Build metadata recursively for each project
-        projectMap.forEach { (path, project) ->
+        projectMap.forEach { (_, project) ->
             buildMetadataRecursively(project, projectMap, metadataMap, changedFilesMap)
         }
 
@@ -103,6 +103,8 @@ class ProjectMetadataFactory(private val logger: Logger) {
     /**
      * Finds all project paths that the given project depends on.
      * This includes regular project dependencies and platform/BOM dependencies.
+     * Only examines declared dependencies, not resolved dependencies, to avoid
+     * triggering configuration resolution during the configuration phase.
      *
      * @param project The project to find dependencies for
      * @return Set of project paths that are dependencies
@@ -113,43 +115,40 @@ class ProjectMetadataFactory(private val logger: Logger) {
         try {
             project.configurations.forEach { config ->
                 try {
-                    // Get all dependencies from the configuration
+                    // Only look at declared dependencies, don't resolve
                     config.dependencies.forEach { dep ->
                         when (dep) {
                             is ProjectDependency -> {
                                 // Regular project dependency
+                                @Suppress("DEPRECATION")
                                 dependencies.add(dep.dependencyProject.path)
                             }
                             else -> {
                                 // Check if it's a platform dependency wrapping a ProjectDependency
-                                // Platform dependencies have a 'targetConfiguration' that may be null
                                 try {
-                                    val targetConfiguration = dep.javaClass.methods
-                                        .find { it.name == "getTargetConfiguration" }
-                                        ?.invoke(dep)
-
                                     // Try to unwrap the project dependency from platform notation
                                     val wrappedDep = dep.javaClass.methods
                                         .find { it.name == "getDependency" }
                                         ?.invoke(dep)
 
                                     if (wrappedDep is ProjectDependency) {
+                                        @Suppress("DEPRECATION")
                                         dependencies.add(wrappedDep.dependencyProject.path)
                                     }
-                                } catch (e: Exception) {
+                                } catch (_: Exception) {
                                     // Not a platform dependency or can't unwrap, skip
                                 }
                             }
                         }
                     }
                 } catch (e: Exception) {
-                    // Individual configuration might not be resolvable, skip
-                    logger.debug("Could not resolve configuration ${config.name} for ${project.path}: ${e.message}")
+                    // Individual configuration might not be accessible, skip
+                    logger.debug("Could not access configuration ${config.name} for ${project.path}: ${e.message}")
                 }
             }
         } catch (e: Exception) {
             // Configuration might not be available yet, skip
-            logger.debug("Could not resolve dependencies for ${project.path}: ${e.message}")
+            logger.debug("Could not access dependencies for ${project.path}: ${e.message}")
         }
 
         return dependencies
