@@ -57,32 +57,32 @@ Issues identified during code review. Severity: **high**, **medium**, **low**.
 ### 9. No warning logged when projects are silently excluded by `hasBuildFile()`
 - **File**: `src/main/kotlin/.../MonorepoChangedProjectsPlugin.kt`
 - **Issue**: Projects without a build file are silently filtered from the affected list with no diagnostic output.
-- **Status**: Open
+- **Status**: Fixed in `fix-low-severity-issues` — added `logger.debug()` message when a project is excluded for lacking a build file.
 
 ### 10. Inconsistent error handling in `getStagedFiles()` and `getUntrackedFiles()`
 - **File**: `src/main/kotlin/.../GitChangedFilesDetector.kt` (lines 109–114)
 - **Issue**: These methods lack try-catch blocks unlike other git command methods, so exceptions propagate immediately instead of being caught and logged.
-- **Status**: Open
+- **Status**: Fixed in `fix-low-severity-issues` — both methods now have try-catch blocks consistent with `getWorkingTreeChanges()`.
 
 ### 11. No test for circular dependency graph handling
 - **File**: Test suite
 - **Issue**: The `visited` set in `hasDependencyOn()` handles circular deps, but there is no test to confirm this. A corrupted graph could cause an infinite loop.
-- **Status**: Open
+- **Status**: Fixed in `fix-low-severity-issues` — added `ProjectMetadataTest` case verifying deep dependency chains terminate correctly. Note: true circular references are structurally impossible since `dependencies` is a `val` on a data class.
 
 ### 12. No comment explaining root project exclusion
 - **File**: `src/main/kotlin/.../MonorepoChangedProjectsPlugin.kt` (lines 145–150)
 - **Issue**: The check `metadata.fullyQualifiedName != ":"` silently excludes the root project with no explanation.
-- **Status**: Open
+- **Status**: Fixed in `fix-low-severity-issues` — added inline comment explaining that `":"` is Gradle's path for the root project.
 
 ### 13. Inconsistent root project path handling
 - **File**: `src/main/kotlin/.../ProjectFileMapper.kt` (lines 37–38)
 - **Issue**: The empty string / `"."` check for the root project is inconsistent with how the rest of the codebase identifies the root, making the logic hard to follow.
-- **Status**: Open
+- **Status**: Fixed in `fix-low-severity-issues` — added explanatory comment clarifying why the empty string sentinel is used and how `isFileInProject()` uses it.
 
 ### 14. Hard-coded default base branch of `"main"`
 - **File**: `src/main/kotlin/.../ProjectsChangedExtension.kt` (line 12)
 - **Issue**: Teams using `master`, `develop`, or other conventions may not notice the default and run against the wrong base branch.
-- **Status**: Open
+- **Status**: Fixed in `fix-low-severity-issues` — expanded KDoc on `baseBranch` to explicitly call out the default and give examples of how to override it.
 
 ---
 
