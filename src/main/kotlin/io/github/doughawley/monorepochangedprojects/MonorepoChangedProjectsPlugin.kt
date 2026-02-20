@@ -1,5 +1,6 @@
 package io.github.doughawley.monorepochangedprojects
 
+import io.github.doughawley.monorepochangedprojects.git.GitCommandExecutor
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
@@ -127,8 +128,9 @@ class MonorepoChangedProjectsPlugin : Plugin<Project> {
         logger.lifecycle("Base branch: ${extension.baseBranch}")
         logger.lifecycle("Include untracked: ${extension.includeUntracked}")
 
-        // Initialize detectors and factories
-        val gitDetector = GitChangedFilesDetector(logger)
+        // Initialize detectors and factories, sharing a single GitCommandExecutor instance
+        val gitExecutor = GitCommandExecutor(logger)
+        val gitDetector = GitChangedFilesDetector(logger, gitExecutor)
         val projectMapper = ProjectFileMapper()
         val metadataFactory = ProjectMetadataFactory(logger)
 

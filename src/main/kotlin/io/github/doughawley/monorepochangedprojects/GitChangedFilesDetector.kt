@@ -8,9 +8,10 @@ import java.io.File
  * Responsible for detecting changed files from git.
  * Detects committed changes, staged changes, and optionally untracked files.
  */
-class GitChangedFilesDetector(private val logger: Logger) {
-
-    private val gitExecutor = GitCommandExecutor(logger)
+class GitChangedFilesDetector(
+    private val logger: Logger,
+    private val gitExecutor: GitCommandExecutor = GitCommandExecutor(logger)
+) {
 
     /**
      * Gets the list of changed files from git based on the configuration.

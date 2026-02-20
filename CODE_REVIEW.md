@@ -48,7 +48,7 @@ Issues identified during code review. Severity: **high**, **medium**, **low**.
 ### 8. No instance reuse for `GitCommandExecutor`
 - **File**: `src/main/kotlin/.../GitChangedFilesDetector.kt`, `ProjectMetadataFactory.kt`
 - **Issue**: A new `GitCommandExecutor` instance is created on every use despite being stateless — minor overhead in large builds.
-- **Status**: Open
+- **Status**: Fixed in `fix-git-executor-reuse` — `GitCommandExecutor` is now an injectable constructor parameter on `GitChangedFilesDetector` (with a default for backward compatibility); `computeMetadata()` creates one shared instance and passes it in.
 
 ---
 
