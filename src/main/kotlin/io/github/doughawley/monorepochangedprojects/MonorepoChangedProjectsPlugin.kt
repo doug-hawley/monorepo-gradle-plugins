@@ -41,6 +41,26 @@ class MonorepoChangedProjectsPlugin : Plugin<Project> {
                     computeMetadata(project.rootProject, rootExtension)
                     rootExtension.metadataComputed = true
                     project.logger.debug("Changed project metadata computed successfully in configuration phase")
+
+                    // Wire up dependsOn for each affected project's build task now that we know
+                    // which projects changed. This must happen in the configuration phase so
+                    // Gradle can include them in the task graph before execution begins.
+                    val buildChangedTask = project.tasks.named("buildChangedProjects")
+                    rootExtension.allAffectedProjects.forEach { projectPath ->
+                        val targetProject = project.rootProject.findProject(projectPath)
+                        if (targetProject != null) {
+                            val buildTask = targetProject.tasks.findByName("build")
+                            if (buildTask != null) {
+                                buildChangedTask.configure {
+                                    dependsOn(buildTask)
+                                }
+                            } else {
+                                project.logger.warn("No build task found for $projectPath")
+                            }
+                        } else {
+                            project.logger.warn("Project not found: $projectPath")
+                        }
+                    }
                 } catch (e: Exception) {
                     // Fail-fast: metadata computation is critical
                     throw IllegalStateException(
@@ -57,17 +77,17 @@ class MonorepoChangedProjectsPlugin : Plugin<Project> {
             description = "Detects which projects have changed based on git history"
         }
 
-        // Register the buildChangedProjects task
+        // Register the buildChangedProjects task.
+        // Actual dependsOn wiring for affected project build tasks is added dynamically
+        // in the projectsEvaluated hook above, after changed projects are known.
         project.tasks.register("buildChangedProjects").configure {
             group = "build"
             description = "Builds only the projects that have been affected by changes"
             dependsOn("detectChangedProjects")
-            mustRunAfter("detectChangedProjects")
 
             doLast {
                 val extension = project.rootProject.extensions.getByType(ProjectsChangedExtension::class.java)
 
-                // Fail-fast if metadata wasn't computed
                 if (!extension.metadataComputed) {
                     throw IllegalStateException(
                         "Changed project metadata was not computed in configuration phase. " +
@@ -76,32 +96,10 @@ class MonorepoChangedProjectsPlugin : Plugin<Project> {
                 }
 
                 val changedProjects = extension.allAffectedProjects
-
                 if (changedProjects.isEmpty()) {
                     project.logger.lifecycle("No projects have changed - nothing to build")
                 } else {
-                    project.logger.lifecycle("Building ${changedProjects.size} changed project(s): ${changedProjects.joinToString(", ")}")
-
-                    changedProjects.forEach { projectPath ->
-                        val targetProject = project.findProject(projectPath)
-                        if (targetProject != null) {
-                            project.logger.lifecycle("Building $projectPath...")
-
-                            // Find and execute the build task for this project
-                            val buildTask = targetProject.tasks.findByName("build")
-                            if (buildTask != null) {
-                                buildTask.actions.forEach { action ->
-                                    action.execute(buildTask)
-                                }
-                            } else {
-                                project.logger.warn("No build task found for $projectPath")
-                            }
-                        } else {
-                            project.logger.warn("Project not found: $projectPath")
-                        }
-                    }
-
-                    project.logger.lifecycle("Successfully built ${changedProjects.size} changed project(s)")
+                    project.logger.lifecycle("Building changed projects: ${changedProjects.joinToString(", ")}")
                 }
             }
         }

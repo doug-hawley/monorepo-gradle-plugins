@@ -48,10 +48,16 @@ class TestProjectBuilder(private val projectDir: File) {
             plugins {
                 id("io.github.doug-hawley.monorepo-changed-projects-plugin")
             }
-            
+
             projectsChanged {
                 baseBranch = "$baseBranch"
                 includeUntracked = true
+            }
+
+            allprojects {
+                repositories {
+                    mavenCentral()
+                }
             }
             """.trimIndent()
         } else {
@@ -93,7 +99,7 @@ class TestProjectBuilder(private val projectDir: File) {
                 if (subproject.isBom) {
                     appendLine("    `java-platform`")
                 } else {
-                    appendLine("    kotlin(\"jvm\") version \"1.9.0\"")
+                    appendLine("    kotlin(\"jvm\") version \"2.0.21\"")
                 }
                 appendLine("}")
                 appendLine()
@@ -130,7 +136,9 @@ class TestProjectBuilder(private val projectDir: File) {
                 val srcDir = File(subprojectDir, "src/main/kotlin/com/example")
                 srcDir.mkdirs()
                 // Use just the last part of the path for the class name (e.g., "Module1" from "modules/module1")
-                val simpleClassName = subproject.name.split("/").last().replaceFirstChar { it.uppercase() }
+                val simpleClassName = subproject.name.split("/").last()
+                    .split("-")
+                    .joinToString("") { part -> part.replaceFirstChar { it.uppercase() } }
                 File(srcDir, "$simpleClassName.kt").writeText(
                     """
                 package com.example
@@ -275,6 +283,22 @@ fun BuildResult.extractChangedProjects(): Set<String> {
 
 fun BuildResult.extractDirectlyChangedProjects(): Set<String> {
     val regex = """Directly changed projects: (.*)""".toRegex()
+    val match = regex.find(output)
+    val projectsString = match?.groupValues?.get(1)?.trim() ?: ""
+
+    return if (projectsString.isEmpty()) {
+        emptySet()
+    } else {
+        projectsString
+            .split(", ")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .toSet()
+    }
+}
+
+fun BuildResult.extractBuiltProjects(): Set<String> {
+    val regex = """Building changed projects: (.*)""".toRegex()
     val match = regex.find(output)
     val projectsString = match?.groupValues?.get(1)?.trim() ?: ""
 

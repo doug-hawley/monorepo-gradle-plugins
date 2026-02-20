@@ -3,8 +3,10 @@ package io.github.doughawley.monorepochangedprojects.functional
 import io.github.doughawley.monorepochangedprojects.functional.StandardTestProject.Files
 import io.github.doughawley.monorepochangedprojects.functional.StandardTestProject.Projects
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
@@ -30,13 +32,15 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
         // Assert
         result.task(":buildChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
 
-        // Should build common-lib and all its dependents (5 projects total)
-        result.output shouldContain "Building 5 changed project(s)"
-        result.output shouldContain Projects.COMMON_LIB
-        result.output shouldContain Projects.MODULE1
-        result.output shouldContain Projects.MODULE2
-        result.output shouldContain Projects.APP1
-        result.output shouldContain Projects.APP2
+        // Should build common-lib and all its dependents
+        val builtProjects = result.extractBuiltProjects()
+        builtProjects shouldContainAll setOf(
+            Projects.COMMON_LIB,
+            Projects.MODULE1,
+            Projects.MODULE2,
+            Projects.APP1,
+            Projects.APP2
+        )
     }
 
     test("buildChangedProjects builds only affected apps when module changes") {
@@ -53,10 +57,9 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
         // Assert
         result.task(":buildChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
 
-        result.output shouldContain "Building 2 changed project(s)"
-        result.output shouldContain Projects.MODULE1
-        result.output shouldContain Projects.APP1
-        result.output shouldNotContain Projects.APP2  // app2 doesn't depend on module1
+        val builtProjects = result.extractBuiltProjects()
+        builtProjects shouldContainAll setOf(Projects.MODULE1, Projects.APP1)
+        builtProjects shouldNotContain Projects.APP2  // app2 doesn't depend on module1
     }
 
     test("buildChangedProjects reports no changes when nothing modified") {
@@ -87,9 +90,9 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
 
         // Assert
         result.task(":buildChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
-        result.output shouldContain "Building 2 changed project(s)"
-        result.output shouldContain Projects.APP1
-        result.output shouldContain Projects.APP2
+
+        val builtProjects = result.extractBuiltProjects()
+        builtProjects shouldContainAll setOf(Projects.APP1, Projects.APP2)
     }
 
     test("buildChangedProjects runs after detectChangedProjects") {
@@ -120,12 +123,13 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
 
         // Assert
         result.task(":buildChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
-        result.output shouldContain "Building 1 changed project(s)"
-        result.output shouldContain Projects.APP2
-        result.output shouldNotContain Projects.COMMON_LIB
-        result.output shouldNotContain Projects.MODULE1
-        result.output shouldNotContain Projects.MODULE2
-        result.output shouldNotContain Projects.APP1
+
+        val builtProjects = result.extractBuiltProjects()
+        builtProjects shouldContain Projects.APP2
+        builtProjects shouldNotContain Projects.COMMON_LIB
+        builtProjects shouldNotContain Projects.MODULE1
+        builtProjects shouldNotContain Projects.MODULE2
+        builtProjects shouldNotContain Projects.APP1
     }
 
     test("buildChangedProjects builds projects affected by BOM changes") {
@@ -143,13 +147,15 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
         result.task(":buildChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
 
         // Should build all projects that depend on the BOM
-        result.output shouldContain "Building 6 changed project(s)"
-        result.output shouldContain Projects.PLATFORM
-        result.output shouldContain Projects.COMMON_LIB
-        result.output shouldContain Projects.MODULE1
-        result.output shouldContain Projects.MODULE2
-        result.output shouldContain Projects.APP1
-        result.output shouldContain Projects.APP2
+        val builtProjects = result.extractBuiltProjects()
+        builtProjects shouldContainAll setOf(
+            Projects.PLATFORM,
+            Projects.COMMON_LIB,
+            Projects.MODULE1,
+            Projects.MODULE2,
+            Projects.APP1,
+            Projects.APP2
+        )
     }
 
     test("plugin detects BOM changes and marks all dependent projects as changed") {
@@ -230,8 +236,8 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
         result.task(":buildChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
 
         // The property should have been available (no error about missing property)
-        result.output shouldContain "Building 1 changed project(s)"
-        result.output shouldContain Projects.APP1
+        val builtProjects = result.extractBuiltProjects()
+        builtProjects shouldContain Projects.APP1
         result.output shouldNotContain "Changed projects data not available"
         result.output shouldNotContain "detectChangedProjects must run before buildChangedProjects"
     }
