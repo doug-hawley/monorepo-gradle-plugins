@@ -108,17 +108,27 @@ class GitChangedFilesDetector(
     }
 
     private fun getStagedFiles(gitDir: File): Set<String> {
-        return gitExecutor.executeForOutput(
-            gitDir,
-            "diff", "--name-only", "--cached"
-        ).toSet()
+        return try {
+            gitExecutor.executeForOutput(
+                gitDir,
+                "diff", "--name-only", "--cached"
+            ).toSet()
+        } catch (e: Exception) {
+            logger.warn("Could not get staged files: ${e.message}")
+            emptySet()
+        }
     }
 
     private fun getUntrackedFiles(gitDir: File): Set<String> {
-        return gitExecutor.executeForOutput(
-            gitDir,
-            "ls-files", "--others", "--exclude-standard"
-        ).toSet()
+        return try {
+            gitExecutor.executeForOutput(
+                gitDir,
+                "ls-files", "--others", "--exclude-standard"
+            ).toSet()
+        } catch (e: Exception) {
+            logger.warn("Could not get untracked files: ${e.message}")
+            emptySet()
+        }
     }
 
     private fun findGitRoot(startDir: File): File? {

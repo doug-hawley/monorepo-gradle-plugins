@@ -34,7 +34,9 @@ class ProjectFileMapper {
             // Normalize path separators to forward slashes for cross-platform compatibility
             val normalizedProjectPath = projectPath.replace('\\', '/')
 
-            // Add trailing slash for comparison
+            // An empty or "." path means this is the root project (its projectDir == rootDir).
+            // Use an empty string as the sentinel so isFileInProject() can identify it and
+            // apply root-project-specific matching logic (exclude files that belong to subprojects).
             val normalizedProjectPathWithSlash = if (normalizedProjectPath.isEmpty() || normalizedProjectPath == ".") "" else "$normalizedProjectPath/"
 
             changedFiles.forEach { file ->

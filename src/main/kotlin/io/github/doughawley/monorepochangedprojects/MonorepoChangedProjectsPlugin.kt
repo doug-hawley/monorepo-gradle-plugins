@@ -141,12 +141,20 @@ class MonorepoChangedProjectsPlugin : Plugin<Project> {
         // Build metadata with changed files information
         val metadataMap = metadataFactory.buildProjectMetadataMap(project.rootProject, changedFilesMap)
 
-        // Get all affected projects (those with changes OR dependency changes)
+        // Get all affected projects (those with changes OR dependency changes).
+        // ":" is Gradle's path for the root project — it has no dedicated build task
+        // and is intentionally excluded from the affected project list.
+        // Projects without a build file (build.gradle or build.gradle.kts) are also
+        // excluded as they cannot be built directly.
         val allAffectedProjects = metadataMap.values
             .filter { metadata ->
                 metadata.hasChanges() &&
                 metadata.fullyQualifiedName != ":" &&
-                hasBuildFile(project.rootProject, metadata.fullyQualifiedName)
+                hasBuildFile(project.rootProject, metadata.fullyQualifiedName).also { hasBuild ->
+                    if (!hasBuild) {
+                        logger.debug("Excluding ${metadata.fullyQualifiedName} from affected projects: no build file found")
+                    }
+                }
             }
             .map { it.fullyQualifiedName }
             .toSet()

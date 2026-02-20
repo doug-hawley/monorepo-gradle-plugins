@@ -7,7 +7,13 @@ import io.github.doughawley.monorepochangedprojects.domain.ProjectMetadata
  */
 open class ProjectsChangedExtension {
     /**
-     * The base branch to compare against (default: main)
+     * The base branch to compare against when detecting changed files.
+     * Defaults to "main" — override this if your repository uses a different
+     * primary branch name (e.g. "master", "develop", "trunk").
+     *
+     * Supports both local branch names (e.g. "main") and remote refs
+     * (e.g. "origin/main"). A local name is automatically prefixed with
+     * "origin/" before falling back to a local-only comparison.
      */
     var baseBranch: String = "main"
 
