@@ -32,41 +32,47 @@ class MonorepoChangedProjectsPlugin : Plugin<Project> {
         // Use gradle.projectsEvaluated to ensure all subprojects are configured
         // Use a flag on the gradle instance to ensure this only runs once
         project.gradle.projectsEvaluated {
-            val computed = project.gradle.extensions.extraProperties.has(COMPUTED_FLAG_KEY)
-            if (!computed) {
-                // Mark as computed before running to prevent re-entry
-                project.gradle.extensions.extraProperties.set(COMPUTED_FLAG_KEY, true)
+            // Synchronize on the root project to guard against parallel project configuration
+            // (--parallel) where multiple threads may register and fire this callback
+            // concurrently. The check-and-set must be atomic to ensure computeMetadata()
+            // runs exactly once.
+            synchronized(project.rootProject) {
+                val computed = project.gradle.extensions.extraProperties.has(COMPUTED_FLAG_KEY)
+                if (!computed) {
+                    // Mark as computed before running to prevent re-entry
+                    project.gradle.extensions.extraProperties.set(COMPUTED_FLAG_KEY, true)
 
-                try {
-                    computeMetadata(project.rootProject, rootExtension)
-                    rootExtension.metadataComputed = true
-                    project.logger.debug("Changed project metadata computed successfully in configuration phase")
+                    try {
+                        computeMetadata(project.rootProject, rootExtension)
+                        rootExtension.metadataComputed = true
+                        project.logger.debug("Changed project metadata computed successfully in configuration phase")
 
-                    // Wire up dependsOn for each affected project's build task now that we know
-                    // which projects changed. This must happen in the configuration phase so
-                    // Gradle can include them in the task graph before execution begins.
-                    val buildChangedTask = project.tasks.named("buildChangedProjects")
-                    rootExtension.allAffectedProjects.forEach { projectPath ->
-                        val targetProject = project.rootProject.findProject(projectPath)
-                        if (targetProject != null) {
-                            val buildTask = targetProject.tasks.findByName("build")
-                            if (buildTask != null) {
-                                buildChangedTask.configure {
-                                    dependsOn(buildTask)
+                        // Wire up dependsOn for each affected project's build task now that we know
+                        // which projects changed. This must happen in the configuration phase so
+                        // Gradle can include them in the task graph before execution begins.
+                        val buildChangedTask = project.tasks.named("buildChangedProjects")
+                        rootExtension.allAffectedProjects.forEach { projectPath ->
+                            val targetProject = project.rootProject.findProject(projectPath)
+                            if (targetProject != null) {
+                                val buildTask = targetProject.tasks.findByName("build")
+                                if (buildTask != null) {
+                                    buildChangedTask.configure {
+                                        dependsOn(buildTask)
+                                    }
+                                } else {
+                                    project.logger.warn("No build task found for $projectPath")
                                 }
                             } else {
-                                project.logger.warn("No build task found for $projectPath")
+                                project.logger.warn("Project not found: $projectPath")
                             }
-                        } else {
-                            project.logger.warn("Project not found: $projectPath")
                         }
+                    } catch (e: Exception) {
+                        // Fail-fast: metadata computation is critical
+                        throw IllegalStateException(
+                            "Failed to compute changed project metadata in configuration phase: ${e.message}",
+                            e
+                        )
                     }
-                } catch (e: Exception) {
-                    // Fail-fast: metadata computation is critical
-                    throw IllegalStateException(
-                        "Failed to compute changed project metadata in configuration phase: ${e.message}",
-                        e
-                    )
                 }
             }
         }
