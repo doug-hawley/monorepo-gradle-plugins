@@ -63,36 +63,57 @@ class GitChangedFilesDetector(
             logger.error("Error executing git command: ${e.message}", e)
         }
 
-        // Apply exclude patterns
+        // Pre-compile exclude patterns once rather than recompiling for every file
+        val compiledExcludePatterns = extension.excludePatterns.map { Regex(it) }
         return changedFiles.filterNot { file ->
-            extension.excludePatterns.any { pattern ->
-                file.matches(Regex(pattern))
-            }
+            compiledExcludePatterns.any { pattern -> file.matches(pattern) }
         }.toSet()
     }
 
     private fun getChangedFilesSinceBaseBranch(gitDir: File, baseBranch: String): Set<String> {
-        // Compare committed changes between base branch and HEAD
+        // Resolve the best available ref before attempting the diff so we can give a
+        // clear diagnostic if neither a remote nor a local branch can be found.
+        val resolvedRef = resolveBaseBranchRef(gitDir, baseBranch)
+        if (resolvedRef == null) {
+            logger.warn(
+                "Could not resolve base branch '$baseBranch' as a remote (origin/$baseBranch) " +
+                "or local ref — skipping branch comparison. " +
+                "Check that 'baseBranch' is set correctly in your projectsChanged configuration."
+            )
+            return emptySet()
+        }
+
         return try {
-            // If baseBranch already includes "origin/", don't add it again
-            val branchRef = if (baseBranch.startsWith("origin/")) baseBranch else "origin/$baseBranch"
             gitExecutor.executeForOutput(
                 gitDir,
-                "diff", "--name-only", "$branchRef...HEAD"
+                "diff", "--name-only", "$resolvedRef...HEAD"
             ).toSet()
         } catch (e: Exception) {
-            // If origin/ doesn't work, try local branch comparison
-            try {
-                gitExecutor.executeForOutput(
-                    gitDir,
-                    "diff", "--name-only", "$baseBranch...HEAD"
-                ).toSet()
-            } catch (e2: Exception) {
-                logger.warn("Could not compare to branch $baseBranch: ${e2.message}")
-                emptySet()
-            }
+            logger.warn("Could not diff against '$resolvedRef': ${e.message}")
+            emptySet()
         }
     }
+
+    /**
+     * Resolves the base branch to a concrete git ref that exists in the repository.
+     * Preference order:
+     *  1. If the caller already supplied a remote ref (e.g. "origin/main"), use it directly.
+     *  2. Try the remote tracking ref "origin/<baseBranch>".
+     *  3. Fall back to the local branch <baseBranch>.
+     * Returns null if none of the candidates exist.
+     */
+    private fun resolveBaseBranchRef(gitDir: File, baseBranch: String): String? {
+        if (baseBranch.startsWith("origin/")) {
+            return if (refExists(gitDir, baseBranch)) baseBranch else null
+        }
+        val remoteRef = "origin/$baseBranch"
+        if (refExists(gitDir, remoteRef)) return remoteRef
+        if (refExists(gitDir, baseBranch)) return baseBranch
+        return null
+    }
+
+    private fun refExists(gitDir: File, ref: String): Boolean =
+        gitExecutor.execute(gitDir, "rev-parse", "--verify", ref).success
 
     private fun getWorkingTreeChanges(gitDir: File): Set<String> {
         // Get files modified in working tree but not yet staged or committed

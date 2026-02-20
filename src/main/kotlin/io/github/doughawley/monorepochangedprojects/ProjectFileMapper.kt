@@ -29,7 +29,16 @@ class ProjectFileMapper {
         val projectToFilesMap = mutableMapOf<String, MutableList<String>>()
 
         rootProject.allprojects.forEach { subproject ->
-            val projectPath = subproject.projectDir.relativeTo(rootProject.rootDir).path
+            val projectPath = try {
+                subproject.projectDir.relativeTo(rootProject.rootDir).path
+            } catch (e: IllegalArgumentException) {
+                throw IllegalArgumentException(
+                    "Project '${subproject.path}' has a directory (${subproject.projectDir}) " +
+                    "that is not inside the root project directory (${rootProject.rootDir}). " +
+                    "All subproject directories must be located under the root project directory.",
+                    e
+                )
+            }
 
             // Normalize path separators to forward slashes for cross-platform compatibility
             val normalizedProjectPath = projectPath.replace('\\', '/')

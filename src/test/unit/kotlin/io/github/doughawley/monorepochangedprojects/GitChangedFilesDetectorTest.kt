@@ -474,6 +474,101 @@ class GitChangedFilesDetectorTest : FunSpec({
         tempDir.deleteRecursively()
     }
 
+    test("should return empty set when base branch cannot be resolved as remote or local ref") {
+        // given - a real git repo with no remotes and a commit so HEAD exists
+        val tempDir = Files.createTempDirectory("test-unresolvable-branch").toFile()
+        executeGitCommand(tempDir, "init")
+        executeGitCommand(tempDir, "config", "user.email", "test@example.com")
+        executeGitCommand(tempDir, "config", "user.name", "Test User")
+        File(tempDir, "initial.txt").writeText("initial content")
+        executeGitCommand(tempDir, "add", "initial.txt")
+        executeGitCommand(tempDir, "commit", "-m", "initial commit")
+
+        val logger = ProjectBuilder.builder().build().logger
+        val detector = GitChangedFilesDetector(logger)
+        val extension = ProjectsChangedExtension().apply {
+            baseBranch = "this-branch-definitely-does-not-exist-xyz123"
+        }
+
+        // when
+        val result = detector.getChangedFiles(tempDir, extension)
+
+        // then - should degrade gracefully rather than throwing
+        result.shouldBeEmpty()
+        tempDir.deleteRecursively()
+    }
+
+    test("should not double-prefix base branch that already starts with origin/") {
+        // given - a real git repo with no remotes; origin/main won't exist
+        val tempDir = Files.createTempDirectory("test-origin-prefix").toFile()
+        executeGitCommand(tempDir, "init")
+        executeGitCommand(tempDir, "config", "user.email", "test@example.com")
+        executeGitCommand(tempDir, "config", "user.name", "Test User")
+        File(tempDir, "initial.txt").writeText("initial content")
+        executeGitCommand(tempDir, "add", "initial.txt")
+        executeGitCommand(tempDir, "commit", "-m", "initial commit")
+
+        val logger = ProjectBuilder.builder().build().logger
+        val detector = GitChangedFilesDetector(logger)
+        val extension = ProjectsChangedExtension().apply {
+            // Already qualified — should be used as-is and not become origin/origin/main
+            baseBranch = "origin/main"
+        }
+
+        // when
+        val result = detector.getChangedFiles(tempDir, extension)
+
+        // then - no remote exists so origin/main doesn't resolve; should return empty gracefully
+        result.shouldBeEmpty()
+        tempDir.deleteRecursively()
+    }
+
+    test("should correctly apply multiple exclude patterns to many files") {
+        // given
+        val tempDir = Files.createTempDirectory("test-many-patterns").toFile()
+        executeGitCommand(tempDir, "init")
+        executeGitCommand(tempDir, "config", "user.email", "test@example.com")
+        executeGitCommand(tempDir, "config", "user.name", "Test User")
+        File(tempDir, "initial.txt").writeText("initial")
+        executeGitCommand(tempDir, "add", "initial.txt")
+        executeGitCommand(tempDir, "commit", "-m", "initial commit")
+
+        // Create a variety of files
+        File(tempDir, "App.kt").writeText("app")
+        File(tempDir, "README.md").writeText("readme")
+        File(tempDir, "CHANGELOG.md").writeText("changelog")
+        File(tempDir, "notes.txt").writeText("notes")
+        val docsDir = File(tempDir, "docs").also { it.mkdirs() }
+        File(docsDir, "guide.md").writeText("guide")
+        val buildDir = File(tempDir, "build").also { it.mkdirs() }
+        File(buildDir, "output.jar").writeText("jar")
+        executeGitCommand(tempDir, "add", ".")
+
+        val logger = ProjectBuilder.builder().build().logger
+        val detector = GitChangedFilesDetector(logger)
+        val extension = ProjectsChangedExtension().apply {
+            includeUntracked = false
+            excludePatterns = listOf(
+                ".*\\.md",   // all markdown files
+                ".*\\.txt",  // all text files
+                "docs/.*",   // anything in docs/
+                "build/.*"   // anything in build/
+            )
+        }
+
+        // when
+        val result = detector.getChangedFiles(tempDir, extension)
+
+        // then - only App.kt should survive all four patterns
+        result shouldContain "App.kt"
+        result shouldNotContain "README.md"
+        result shouldNotContain "CHANGELOG.md"
+        result shouldNotContain "notes.txt"
+        result shouldNotContain "docs/guide.md"
+        result shouldNotContain "build/output.jar"
+        tempDir.deleteRecursively()
+    }
+
     test("should detect both staged and untracked files together") {
         // given
         val tempDir = Files.createTempDirectory("test-staged-and-untracked").toFile()

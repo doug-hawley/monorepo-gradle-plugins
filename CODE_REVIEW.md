@@ -28,22 +28,22 @@ Issues identified during code review. Severity: **high**, **medium**, **low**.
 ### 4. Regex compiled inside loop in `GitChangedFilesDetector`
 - **File**: `src/main/kotlin/.../GitChangedFilesDetector.kt` (lines 66–70)
 - **Issue**: `Regex(pattern)` is compiled for every file × every exclude pattern — O(n×m) with unnecessary garbage. Pre-compile patterns outside the loop.
-- **Status**: Open
+- **Status**: Fixed in `fix-medium-severity-issues` — patterns are now compiled once into `compiledExcludePatterns` before the filter loop.
 
 ### 5. No error handling for non-relative project paths in `ProjectFileMapper`
 - **File**: `src/main/kotlin/.../ProjectFileMapper.kt` (line 32)
 - **Issue**: `projectDir.relativeTo(rootDir)` throws if a subproject's directory is outside the root, with no clear error message for the user.
-- **Status**: Open
+- **Status**: Fixed in `fix-medium-severity-issues` — wrapped in try-catch that rethrows with a descriptive message including the offending project path and directories.
 
 ### 6. Confusing error message when metadata check fails in `buildChangedProjects`
 - **File**: `src/main/kotlin/.../MonorepoChangedProjectsPlugin.kt` (lines 86–111)
 - **Issue**: If metadata computation was skipped or failed silently, the resulting `IllegalStateException` doesn't surface the root cause.
-- **Status**: Open
+- **Status**: Fixed in `fix-medium-severity-issues` — error message now lists likely causes and directs the user to re-run with `--info` or `--debug`.
 
 ### 7. Git three-dot diff fallback may not work for local-only branches
 - **File**: `src/main/kotlin/.../GitChangedFilesDetector.kt` (lines 73–94)
 - **Issue**: `git diff "$baseBranch...HEAD"` doesn't work if the base branch has no remote tracking ref. Local-only branches need explicit handling.
-- **Status**: Open
+- **Status**: Fixed in `fix-medium-severity-issues` — replaced try-catch fallback with explicit `git rev-parse --verify` probing via `resolveBaseBranchRef()`. Preference order: remote ref → local ref → clear warning if neither exists.
 
 ### 8. No instance reuse for `GitCommandExecutor`
 - **File**: `src/main/kotlin/.../GitChangedFilesDetector.kt`, `ProjectMetadataFactory.kt`

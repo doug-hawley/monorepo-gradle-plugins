@@ -97,8 +97,10 @@ class MonorepoChangedProjectsPlugin : Plugin<Project> {
 
                 if (!extension.metadataComputed) {
                     throw IllegalStateException(
-                        "Changed project metadata was not computed in configuration phase. " +
-                        "This indicates a plugin initialization error."
+                        "Changed project metadata was not computed in the configuration phase. " +
+                        "Possible causes: the plugin was not applied to the root project, " +
+                        "or an error occurred during project evaluation. " +
+                        "Re-run with --info or --debug for more details."
                     )
                 }
 
