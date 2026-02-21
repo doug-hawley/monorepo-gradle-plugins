@@ -3,8 +3,10 @@ package io.github.doughawley.monorepochangedprojects.functional
 import io.github.doughawley.monorepochangedprojects.functional.StandardTestProject.Files
 import io.github.doughawley.monorepochangedprojects.functional.StandardTestProject.Projects
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import org.gradle.testkit.runner.TaskOutcome
@@ -224,6 +226,110 @@ class MonorepoPluginFunctionalTest : FunSpec({
         val changedApps = changedProjects.filter { it.startsWith(":apps") }
         changedApps shouldHaveSize 2
         changedApps shouldContainAll setOf(Projects.APP1, Projects.APP2)
+    }
+
+    // -- Deeply nested project tests (3+ levels, e.g. :services:billing:api) --
+
+    fun createNestedProject() = TestProjectBuilder(testProjectListener.getTestProjectDir())
+        .withSubproject("services/billing/api")
+        .withSubproject("services/billing/impl", dependsOn = listOf("services/billing/api"))
+        .withSubproject("services/payments/gateway", dependsOn = listOf("services/billing/api"))
+        .withSubproject("apps/web", dependsOn = listOf("services/payments/gateway"))
+        .applyPlugin()
+        .withRemote()
+        .build()
+        .also { project ->
+            project.initGit()
+            project.commitAll("Initial commit")
+            project.pushToRemote()
+        }
+
+    test("plugin detects change in three-level-deep project") {
+        val project = createNestedProject()
+
+        project.appendToFile(
+            "services/billing/api/src/main/kotlin/com/example/Api.kt",
+            "\n// Modified"
+        )
+        project.commitAll("Change billing api")
+
+        val result = project.runTask("detectChangedProjects")
+
+        result.task(":detectChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        val changed = result.extractChangedProjects()
+        changed shouldContain ":services:billing:api"
+    }
+
+    test("change in deeply nested project propagates to all transitive dependents") {
+        val project = createNestedProject()
+
+        project.appendToFile(
+            "services/billing/api/src/main/kotlin/com/example/Api.kt",
+            "\n// Modified"
+        )
+        project.commitAll("Change billing api")
+
+        val result = project.runTask("detectChangedProjects")
+
+        result.task(":detectChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        val changed = result.extractChangedProjects()
+        changed shouldContainAll setOf(
+            ":services:billing:api",
+            ":services:billing:impl",
+            ":services:payments:gateway",
+            ":apps:web"
+        )
+    }
+
+    test("change in mid-level nested project does not affect unrelated sibling branch") {
+        val project = createNestedProject()
+
+        project.appendToFile(
+            "services/payments/gateway/src/main/kotlin/com/example/Gateway.kt",
+            "\n// Modified"
+        )
+        project.commitAll("Change payments gateway")
+
+        val result = project.runTask("detectChangedProjects")
+
+        result.task(":detectChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        val changed = result.extractChangedProjects()
+        changed shouldContainAll setOf(":services:payments:gateway", ":apps:web")
+        changed shouldNotContain ":services:billing:api"
+        changed shouldNotContain ":services:billing:impl"
+    }
+
+    test("change in deepest leaf project with no dependents flags only that project") {
+        val project = createNestedProject()
+
+        project.appendToFile(
+            "services/billing/impl/src/main/kotlin/com/example/Impl.kt",
+            "\n// Modified"
+        )
+        project.commitAll("Change billing impl")
+
+        val result = project.runTask("detectChangedProjects")
+
+        result.task(":detectChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        val changed = result.extractChangedProjects()
+        changed shouldBe setOf(":services:billing:impl")
+    }
+
+    test("file-to-project mapping is correct for three-level-deep paths") {
+        val project = createNestedProject()
+
+        project.appendToFile(
+            "services/payments/gateway/src/main/kotlin/com/example/Gateway.kt",
+            "\n// Modified"
+        )
+        project.commitAll("Change gateway")
+
+        val result = project.runTask("detectChangedProjects")
+
+        val changed = result.extractChangedProjects()
+        changed shouldContain ":services:payments:gateway"
+        changed shouldNotContain ":gateway"
+        changed shouldNotContain ":payments:gateway"
     }
 
     test("plugin detects staged changes to multiple projects") {
