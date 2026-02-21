@@ -5,6 +5,70 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0](https://github.com/doug-hawley/monorepo-changed-projects-plugin/compare/v1.0.1...v1.1.0) (2026-02-21)
+
+
+### Features
+
+* Add copilot instructions for Projects Changed Plugin and enhance metadata handling in tasks ([62f2c02](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/62f2c0282bd458f7679e3a85b783931e91973013))
+* Repackage plugin to align with new GitHub username and update project structure ([7fc8cb1](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/7fc8cb1b6a2a07e3576ab1b779cc60854a32a398))
+* Repackage plugin to align with new GitHub username and update project structure ([f9c2a67](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/f9c2a673d9c4de0f8e8a8a4d48699bc095f46244))
+
+
+### Bug Fixes
+
+* Address all low-severity code review issues ([#9](https://github.com/doug-hawley/monorepo-changed-projects-plugin/issues/9)–[#14](https://github.com/doug-hawley/monorepo-changed-projects-plugin/issues/14)) ([1582cf7](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/1582cf78b4a3b99da14a48e92620f0fcd92eccfc))
+* Address all low-severity code review issues ([#9](https://github.com/doug-hawley/monorepo-changed-projects-plugin/issues/9)–[#14](https://github.com/doug-hawley/monorepo-changed-projects-plugin/issues/14)) ([aa72b85](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/aa72b856467183d557fa86832f677955ac0a0611))
+* Address all medium-severity code review issues ([#4](https://github.com/doug-hawley/monorepo-changed-projects-plugin/issues/4)–[#7](https://github.com/doug-hawley/monorepo-changed-projects-plugin/issues/7)) ([10719ac](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/10719ac2c1c13796da5684081e0b164cb8c5ed25))
+* Correctly implement buildChangedProjects task using Gradle task graph ([5edffeb](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/5edffeba5be0497b7895e0cfb6a95650e85d286c))
+* Correctly implement buildChangedProjects task using Gradle task graph ([cd611fa](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/cd611fa75d8596f14d3b11456b0899cf82c4b796))
+* Enhance buildChangedProjects task with property existence check and improved error handling ([fdeff99](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/fdeff9947362da98cabeb0e4bb055203128c432e))
+* Ensure git process is always destroyed and interrupt flag is restored ([e6541dd](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/e6541ddd068ca5ffca1d9c0fa0b4cf63a394e390))
+* Ensure git process is always destroyed and interrupt flag is restored ([438f3cc](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/438f3cc8461967e4997d62c0cc50230e8b9bd958))
+* Guard projectsEvaluated check-and-set with synchronized block ([fa9a116](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/fa9a11686ca8ce2fc507da1b878ec40cea8e147a))
+* Guard projectsEvaluated check-and-set with synchronized block ([fb6a396](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/fb6a396ec0e3647e457c5a8360a94c67149988fe))
+* Improve safety of buildChangedProjects task by handling null and incorrect types for changedProjects property ([a320ddf](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/a320ddfa3bf124f7925cc7fecb433babc6b4b97f))
+* Improve safety of buildChangedProjects task by handling null and… ([0821a7a](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/0821a7acdec829f44a8c8638b7aa8da0a94e5a32))
+* New git username ([8ba6f37](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/8ba6f37a23331f4a05778030577c676a6d1116b7))
+* Optimize CI configuration to avoid redundant test executions ([c59d7d6](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/c59d7d638103d1c366d778eb9a5b98a3a1c0b72e))
+* Optimize CI configuration to avoid redundant test executions ([b4bddb0](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/b4bddb09e632b027c3a8a749a256a736a2ce182c))
+* Replace fragile reflection-based platform dependency unwrapping with type check ([4d33ca7](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/4d33ca73c8625d04088f90f2a6e2a20d3532683c))
+* Replace fragile reflection-based platform dependency unwrapping with type check ([31c5189](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/31c5189efbe050df070f265c717dd951f82f3233))
+* Replace synchronized+extraProperties flag with AtomicBoolean.compareAndSet ([bbd3c91](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/bbd3c91fefdfb4910af04aca2a9ef61c0ad82d93))
+* Replace synchronized+extraProperties flag with AtomicBoolean.compareAndSet ([6698dc7](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/6698dc75b14ad477e1f0f287421ca496b0141183))
+* Update CI workflow to verify Maven Local path with new group ID ([de27049](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/de27049c98fc1486acf8a61909cd4d8664ea312a))
+* Update CI workflow to verify Maven Local path with new group ID ([784faf6](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/784faf64cfd77bf481ad3bce9a179405d2d32259))
+* Update plugin ID to it.github.perulish8.monorepo-changed-projects-plugin ([aa64f8e](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/aa64f8e1c24b06b26b68a53dd5744e4d1c1c6d19))
+
+
+### Documentation
+
+* Add CLAUDE.md with build commands and architecture overview ([428e6e7](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/428e6e75f57dc63532caaa1898089e34cc24e172))
+* automate README version bumps and fix stale content ([ddfb8ef](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/ddfb8efac42ed25e21f9165a402e58d7c2a021cb))
+
+
+### Miscellaneous Chores
+
+* mark code review item [#15](https://github.com/doug-hawley/monorepo-changed-projects-plugin/issues/15) as fixed ([86a32db](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/86a32dbce547e322733e101a54a166d41a9e3a44))
+* upgrade com.gradle.plugin-publish to 2.0.0 ([8c72d6e](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/8c72d6e4e635e9fd6d3269a6bebc5f11b6d9d74b))
+
+
+### Code Refactoring
+
+* Make GitCommandExecutor injectable in GitChangedFilesDetector ([e6c9db8](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/e6c9db81cb3c307aa48d72c644e73f2afc35465b))
+* Make GitCommandExecutor injectable in GitChangedFilesDetector ([37a3b18](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/37a3b18c2c06336b566081afe9ef42c1083866a4))
+
+
+### Tests
+
+* add functional tests for deeply nested project structures ([a0ef684](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/a0ef6846750cce940f64019aae48e56bce59a17d))
+* move deeply nested project tests into MonorepoPluginFunctionalTest ([d28d9ac](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/d28d9acefda64293b0ee1d7e2a645d58fea314e4))
+
+
+### Continuous Integration
+
+* trigger CI on release-please branches ([c1c5a58](https://github.com/doug-hawley/monorepo-changed-projects-plugin/commit/c1c5a583422cb5741ff2300efa240087a099fbbf))
+
 ## [1.0.1](https://github.com/Perulish8/monorepo-changed-projects-plugin/compare/v1.0.0...v1.0.1) (2026-02-06)
 
 

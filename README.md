@@ -38,7 +38,7 @@ This dramatically reduces build times in CI/CD pipelines by avoiding unnecessary
 
 ```kotlin
 plugins {
-    id("io.github.doug-hawley.monorepo-changed-projects-plugin") version "1.0.1" // x-release-please-version
+    id("io.github.doug-hawley.monorepo-changed-projects-plugin") version "1.1.0" // x-release-please-version
 }
 ```
 
@@ -185,7 +185,7 @@ Apply the plugin in your root `build.gradle.kts` and configure it for your branc
 ```kotlin
 // In root build.gradle.kts
 plugins {
-    id("io.github.doug-hawley.monorepo-changed-projects-plugin") version "1.0.1" // x-release-please-version
+    id("io.github.doug-hawley.monorepo-changed-projects-plugin") version "1.1.0" // x-release-please-version
 }
 
 projectsChanged {
