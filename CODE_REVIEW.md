@@ -90,7 +90,7 @@ Issues identified during code review. Severity: **high**, **medium**, **low**.
 
 ### 15. No test for deeply nested projects
 - **Issue**: No test covers projects nested multiple levels deep (e.g., `:services:billing:api`), which is common in large monorepos.
-- **Status**: Open
+- **Status**: Fixed in `fix-deeply-nested-projects-test` — added 5 test cases in `MonorepoPluginFunctionalTest` covering 3-level-deep paths, transitive propagation, sibling isolation, leaf-only detection, and file-to-path mapping.
 
 ### 16. No functional test for exclude patterns end-to-end
 - **Issue**: Exclude patterns are covered in unit tests but not verified in a functional test with a real git repo and Gradle build.
