@@ -345,7 +345,7 @@ mkdir test-project
 cd test-project
 git init
 # Create build.gradle.kts with your plugin
-./gradlew printChangedProjects
+./gradlew printChangedProjectsFromBranch
 ```
 
 ### Debugging
@@ -353,7 +353,7 @@ git init
 Run Gradle with debug logging:
 
 ```bash
-./gradlew printChangedProjects --debug
+./gradlew printChangedProjectsFromBranch --debug
 ```
 
 Run tests with IntelliJ IDEA debugger:

@@ -26,10 +26,10 @@ class MonorepoPluginConfigurationTest : FunSpec({
         // when: a file matching the :api exclude pattern is created (untracked)
         project.createNewFile("api/generated/Code.kt", "// generated code")
 
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         // then: :api is not considered changed because the only changed file is excluded
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
         val changedProjects = result.extractChangedProjects()
         changedProjects shouldNotContain ":api"
     }
@@ -49,10 +49,10 @@ class MonorepoPluginConfigurationTest : FunSpec({
         project.createNewFile("api/generated/Code.kt", "// generated code")
         project.createNewFile("core/generated/Stub.kt", "// generated stub")
 
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         // then: :api is excluded (pattern matches), :core is detected (no pattern)
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
         val changedProjects = result.extractChangedProjects()
         changedProjects shouldNotContain ":api"
         changedProjects shouldContain ":core"

@@ -7,7 +7,7 @@ import org.gradle.testfixtures.ProjectBuilder
 
 class BuildChangedProjectsTaskTest : FunSpec({
 
-    test("buildChangedProjects task should be registered") {
+    test("buildChangedProjectsFromBranch task should be registered") {
         // given
         val project = ProjectBuilder.builder().build()
 
@@ -15,7 +15,7 @@ class BuildChangedProjectsTaskTest : FunSpec({
         project.pluginManager.apply("io.github.doug-hawley.monorepo-build-plugin")
 
         // then
-        val task = project.tasks.findByName("buildChangedProjects")
+        val task = project.tasks.findByName("buildChangedProjectsFromBranch")
         task shouldNotBe null
         task?.group shouldBe "build"
         task?.description shouldBe "Builds only the projects that have been affected by changes"

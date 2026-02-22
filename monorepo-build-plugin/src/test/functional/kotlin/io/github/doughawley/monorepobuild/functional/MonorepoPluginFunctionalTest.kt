@@ -26,10 +26,10 @@ class MonorepoPluginFunctionalTest : FunSpec({
         project.commitAll("Change common-lib")
 
         // Execute
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         // Assert
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
 
         val changedProjects = result.extractChangedProjects()
         changedProjects shouldHaveSize 5  // common-lib + all dependents
@@ -55,10 +55,10 @@ class MonorepoPluginFunctionalTest : FunSpec({
         project.commitAll("Change module1")
 
         // Execute
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         // Assert
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
 
         val changedProjects = result.extractChangedProjects()
         changedProjects shouldHaveSize 2  // module1 and app1 (not app2)
@@ -74,10 +74,10 @@ class MonorepoPluginFunctionalTest : FunSpec({
         project.commitAll("Change module2")
 
         // Execute
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         // Assert
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
 
         val changedProjects = result.extractChangedProjects()
         changedProjects shouldHaveSize 3  // module2, app1, app2
@@ -93,10 +93,10 @@ class MonorepoPluginFunctionalTest : FunSpec({
         project.commitAll("Change app1")
 
         // Execute
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         // Assert
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
 
         val changedProjects = result.extractChangedProjects()
         changedProjects shouldHaveSize 1
@@ -110,10 +110,10 @@ class MonorepoPluginFunctionalTest : FunSpec({
         // Don't make any changes
 
         // Execute
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         // Assert
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
 
         result.extractDirectlyChangedProjects() shouldBe emptySet()
         result.extractChangedProjects() shouldBe emptySet()
@@ -129,10 +129,10 @@ class MonorepoPluginFunctionalTest : FunSpec({
         project.commitAll("Change both apps")
 
         // Execute
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         // Assert
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
 
         val changedProjects = result.extractChangedProjects()
         changedProjects shouldHaveSize 2
@@ -153,10 +153,10 @@ class MonorepoPluginFunctionalTest : FunSpec({
         )
 
         // Execute
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         // Assert
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
 
         val changedProjects = result.extractChangedProjects()
         // common-lib changed, so all dependents affected
@@ -178,10 +178,10 @@ class MonorepoPluginFunctionalTest : FunSpec({
         project.stageFile(Files.MODULE1_SOURCE)
 
         // Execute
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         // Assert
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
 
         val changedProjects = result.extractChangedProjects()
         changedProjects shouldContainAll setOf(Projects.MODULE1, Projects.APP1)
@@ -196,10 +196,10 @@ class MonorepoPluginFunctionalTest : FunSpec({
         project.commitAll("Change build config")
 
         // Execute
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         // Assert
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
 
         val changedProjects = result.extractChangedProjects()
         changedProjects shouldContainAll setOf(Projects.MODULE2, Projects.APP1, Projects.APP2)
@@ -214,7 +214,7 @@ class MonorepoPluginFunctionalTest : FunSpec({
         project.commitAll("Change module2")
 
         // Execute
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         // Assert
         val changedProjects = result.extractChangedProjects()
@@ -250,9 +250,9 @@ class MonorepoPluginFunctionalTest : FunSpec({
         )
         project.commitAll("Change billing api")
 
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
         val changed = result.extractChangedProjects()
         changed shouldContain ":services:billing:api"
     }
@@ -266,9 +266,9 @@ class MonorepoPluginFunctionalTest : FunSpec({
         )
         project.commitAll("Change billing api")
 
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
         val changed = result.extractChangedProjects()
         changed shouldContainAll setOf(
             ":services:billing:api",
@@ -287,9 +287,9 @@ class MonorepoPluginFunctionalTest : FunSpec({
         )
         project.commitAll("Change payments gateway")
 
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
         val changed = result.extractChangedProjects()
         changed shouldContainAll setOf(":services:payments:gateway", ":apps:web")
         changed shouldNotContain ":services:billing:api"
@@ -305,9 +305,9 @@ class MonorepoPluginFunctionalTest : FunSpec({
         )
         project.commitAll("Change billing impl")
 
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
         val changed = result.extractChangedProjects()
         changed shouldBe setOf(":services:billing:impl")
     }
@@ -321,7 +321,7 @@ class MonorepoPluginFunctionalTest : FunSpec({
         )
         project.commitAll("Change gateway")
 
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         val changed = result.extractChangedProjects()
         changed shouldContain ":services:payments:gateway"
@@ -340,10 +340,10 @@ class MonorepoPluginFunctionalTest : FunSpec({
         project.stageFile(Files.APP2_SOURCE)
 
         // Execute
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         // Assert
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
 
         val changedProjects = result.extractChangedProjects()
         // common-lib affects all projects, app2 adds itself

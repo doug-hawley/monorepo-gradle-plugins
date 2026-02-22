@@ -12,12 +12,12 @@ import io.kotest.matchers.string.shouldContain
 import org.gradle.testkit.runner.TaskOutcome
 
 /**
- * Functional tests for the buildChangedProjects task.
+ * Functional tests for the buildChangedProjectsFromBranch task.
  */
 class BuildChangedProjectsFunctionalTest : FunSpec({
     val testProjectListener = listener(TestProjectListener())
 
-    test("buildChangedProjects task builds only affected projects") {
+    test("buildChangedProjectsFromBranch task builds only affected projects") {
         // Setup
         val project = testProjectListener.createStandardProject()
 
@@ -26,10 +26,10 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
         project.commitAll("Change common-lib")
 
         // Execute
-        val result = project.runTask("buildChangedProjects")
+        val result = project.runTask("buildChangedProjectsFromBranch")
 
         // Assert
-        result.task(":buildChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":buildChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
 
         // Should build common-lib and all its dependents
         val builtProjects = result.extractBuiltProjects()
@@ -42,7 +42,7 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
         )
     }
 
-    test("buildChangedProjects builds only affected apps when module changes") {
+    test("buildChangedProjectsFromBranch builds only affected apps when module changes") {
         // Setup
         val project = testProjectListener.createStandardProject()
 
@@ -51,31 +51,31 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
         project.commitAll("Change module1")
 
         // Execute
-        val result = project.runTask("buildChangedProjects")
+        val result = project.runTask("buildChangedProjectsFromBranch")
 
         // Assert
-        result.task(":buildChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":buildChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
 
         val builtProjects = result.extractBuiltProjects()
         builtProjects shouldContainAll setOf(Projects.MODULE1, Projects.APP1)
         builtProjects shouldNotContain Projects.APP2  // app2 doesn't depend on module1
     }
 
-    test("buildChangedProjects reports no changes when nothing modified") {
+    test("buildChangedProjectsFromBranch reports no changes when nothing modified") {
         // Setup
         val project = testProjectListener.createStandardProject()
 
         // Don't make any changes
 
         // Execute
-        val result = project.runTask("buildChangedProjects")
+        val result = project.runTask("buildChangedProjectsFromBranch")
 
         // Assert
-        result.task(":buildChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":buildChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
         result.output shouldContain "No projects have changed - nothing to build"
     }
 
-    test("buildChangedProjects handles multiple independent app changes") {
+    test("buildChangedProjectsFromBranch handles multiple independent app changes") {
         // Setup
         val project = testProjectListener.createStandardProject()
 
@@ -85,16 +85,16 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
         project.commitAll("Change both apps")
 
         // Execute
-        val result = project.runTask("buildChangedProjects")
+        val result = project.runTask("buildChangedProjectsFromBranch")
 
         // Assert
-        result.task(":buildChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":buildChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
 
         val builtProjects = result.extractBuiltProjects()
         builtProjects shouldContainAll setOf(Projects.APP1, Projects.APP2)
     }
 
-    test("buildChangedProjects succeeds without running printChangedProjects") {
+    test("buildChangedProjectsFromBranch succeeds without running printChangedProjectsFromBranch") {
         // Setup
         val project = testProjectListener.createStandardProject()
 
@@ -102,14 +102,14 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
         project.commitAll("Change module2")
 
         // Execute
-        val result = project.runTask("buildChangedProjects")
+        val result = project.runTask("buildChangedProjectsFromBranch")
 
-        // Assert - buildChangedProjects runs independently; printChangedProjects is not triggered
-        result.task(":buildChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
-        result.task(":printChangedProjects") shouldBe null
+        // Assert - buildChangedProjectsFromBranch runs independently; printChangedProjectsFromBranch is not triggered
+        result.task(":buildChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch") shouldBe null
     }
 
-    test("buildChangedProjects builds only leaf project when changed") {
+    test("buildChangedProjectsFromBranch builds only leaf project when changed") {
         // Setup
         val project = testProjectListener.createStandardProject()
 
@@ -118,10 +118,10 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
         project.commitAll("Change app2")
 
         // Execute
-        val result = project.runTask("buildChangedProjects")
+        val result = project.runTask("buildChangedProjectsFromBranch")
 
         // Assert
-        result.task(":buildChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":buildChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
 
         val builtProjects = result.extractBuiltProjects()
         builtProjects shouldContain Projects.APP2
@@ -131,7 +131,7 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
         builtProjects shouldNotContain Projects.APP1
     }
 
-    test("buildChangedProjects builds projects affected by BOM changes") {
+    test("buildChangedProjectsFromBranch builds projects affected by BOM changes") {
         // Setup
         val project = testProjectListener.createStandardProject()
 
@@ -140,10 +140,10 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
         project.commitAll("Bump BOM version")
 
         // Execute
-        val result = project.runTask("buildChangedProjects")
+        val result = project.runTask("buildChangedProjectsFromBranch")
 
         // Assert
-        result.task(":buildChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":buildChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
 
         // Should build all projects that depend on the BOM
         val builtProjects = result.extractBuiltProjects()
@@ -166,10 +166,10 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
         project.commitAll("Update BOM")
 
         // Execute
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         // Assert
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
 
         val changedProjects = result.extractChangedProjects()
         // BOM changed, so all projects that depend on it should be affected
@@ -198,10 +198,10 @@ class BuildChangedProjectsFunctionalTest : FunSpec({
         project.commitAll("Update BOM and common-lib")
 
         // Execute
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         // Assert
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
 
         val changedProjects = result.extractChangedProjects()
         // All projects affected (BOM affects all, common-lib also changed)
