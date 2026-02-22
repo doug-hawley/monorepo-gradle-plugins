@@ -274,34 +274,17 @@ class TestProject(
  * Extension functions for parsing build results.
  */
 fun BuildResult.extractChangedProjects(): Set<String> {
-    val regex = """All affected projects \(including dependents\): (.*)""".toRegex()
-    val projectsString = regex.findAll(output).lastOrNull()?.groupValues?.get(1)?.trim() ?: ""
-
-    return if (projectsString.isEmpty()) {
-        emptySet()
-    } else {
-        projectsString
-            .split(", ")
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .toSet()
-    }
+    // Match all project path lines: "  :project-path" and "  :project-path  (affected via ...)"
+    val regex = """^ {2}(:[^\s(]+)""".toRegex(RegexOption.MULTILINE)
+    return regex.findAll(output).map { it.groupValues[1] }.toSet()
 }
 
 fun BuildResult.extractDirectlyChangedProjects(): Set<String> {
-    val regex = """Directly changed projects: (.*)""".toRegex()
-    val match = regex.find(output)
-    val projectsString = match?.groupValues?.get(1)?.trim() ?: ""
-
-    return if (projectsString.isEmpty()) {
-        emptySet()
-    } else {
-        projectsString
-            .split(", ")
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .toSet()
-    }
+    // Match project path lines with no "(affected via ...)" annotation — these are directly changed.
+    // Padded transitively-affected lines (e.g. "  :apps:app1        (affected via ...)") are excluded
+    // because the annotation is non-whitespace after the path.
+    val regex = """^ {2}(:[^\s(]+)\s*$""".toRegex(RegexOption.MULTILINE)
+    return regex.findAll(output).map { it.groupValues[1] }.toSet()
 }
 
 fun BuildResult.extractBuiltProjects(): Set<String> {
