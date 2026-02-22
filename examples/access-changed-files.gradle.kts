@@ -2,10 +2,10 @@
 // Place this in your root build.gradle.kts
 
 plugins {
-    id("io.github.doug-hawley.monorepo-changed-projects-plugin") version "1.1.0" // x-release-please-version
+    id("io.github.doug-hawley.monorepo-build-plugin") version "1.1.0" // x-release-please-version
 }
 
-projectsChanged {
+monorepoBuild {
     baseBranch = "main"
     includeUntracked = true
 }
@@ -17,7 +17,7 @@ projectsChanged {
 tasks.register("listChangedProjects") {
     doLast {
         val extension = project.extensions.getByType(
-            io.github.doughawley.monorepochangedprojects.ProjectsChangedExtension::class.java
+            io.github.doughawley.monorepobuild.MonorepoBuildExtension::class.java
         )
         println("Changed projects: ${extension.allAffectedProjects.joinToString(", ")}")
     }
@@ -27,7 +27,7 @@ tasks.register("listChangedProjects") {
 tasks.register("listChangedFiles") {
     doLast {
         val extension = project.extensions.getByType(
-            io.github.doughawley.monorepochangedprojects.ProjectsChangedExtension::class.java
+            io.github.doughawley.monorepobuild.MonorepoBuildExtension::class.java
         )
 
         println("Changed files by project:")
@@ -44,7 +44,7 @@ tasks.register("listChangedFiles") {
 tasks.register("analyzeChanges") {
     doLast {
         val extension = project.extensions.getByType(
-            io.github.doughawley.monorepochangedprojects.ProjectsChangedExtension::class.java
+            io.github.doughawley.monorepobuild.MonorepoBuildExtension::class.java
         )
 
         println("Detailed change analysis:")
@@ -68,7 +68,7 @@ tasks.register("analyzeChanges") {
 tasks.register("smartBuild") {
     doLast {
         val extension = project.extensions.getByType(
-            io.github.doughawley.monorepochangedprojects.ProjectsChangedExtension::class.java
+            io.github.doughawley.monorepobuild.MonorepoBuildExtension::class.java
         )
 
         extension.changedFilesMap.forEach { (projectPath, files) ->
@@ -97,7 +97,7 @@ tasks.register("smartBuild") {
 tasks.register("impactReport") {
     doLast {
         val extension = project.extensions.getByType(
-            io.github.doughawley.monorepochangedprojects.ProjectsChangedExtension::class.java
+            io.github.doughawley.monorepobuild.MonorepoBuildExtension::class.java
         )
 
         val report = StringBuilder()

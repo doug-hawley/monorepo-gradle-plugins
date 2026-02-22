@@ -44,13 +44,13 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build plugin
-        run: ./gradlew build -x test -x unitTest -x functionalTest --no-daemon --stacktrace
+        run: ./gradlew :monorepo-build-plugin:build -x test -x unitTest -x functionalTest --no-daemon --stacktrace
 
       - name: Run unit tests
-        run: ./gradlew unitTest --no-daemon --stacktrace
+        run: ./gradlew :monorepo-build-plugin:unitTest --no-daemon --stacktrace
 
       - name: Run functional tests
-        run: ./gradlew functionalTest --no-daemon --stacktrace
+        run: ./gradlew :monorepo-build-plugin:functionalTest --no-daemon --stacktrace
 
       - name: Upload test reports
         if: always()
@@ -58,8 +58,8 @@ jobs:
         with:
           name: test-reports-${{ matrix.os }}-java${{ matrix.java-version }}
           path: |
-            build/reports/tests/
-            build/test-results/
+            monorepo-build-plugin/build/reports/tests/
+            monorepo-build-plugin/build/test-results/
           retention-days: 7
 
       - name: Upload build artifacts
@@ -67,7 +67,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: plugin-jar
-          path: build/libs/*.jar
+          path: monorepo-build-plugin/build/libs/*.jar
           retention-days: 30
 
   code-quality:
@@ -88,10 +88,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
 
       - name: Check code style
-        run: ./gradlew check --no-daemon --stacktrace
+        run: ./gradlew :monorepo-build-plugin:check --no-daemon --stacktrace
 
       - name: Verify plugin descriptor
-        run: ./gradlew validatePlugins --no-daemon --stacktrace
+        run: ./gradlew :monorepo-build-plugin:validatePlugins --no-daemon --stacktrace
 
   publish-local:
     name: Test Local Publishing
@@ -112,13 +112,13 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
 
       - name: Publish to Maven Local
-        run: ./gradlew publishToMavenLocal --no-daemon --stacktrace
+        run: ./gradlew :monorepo-build-plugin:publishToMavenLocal --no-daemon --stacktrace
 
       - name: Verify published artifact
         run: |
-          if [ -d ~/.m2/repository/io/github/doug-hawley/monorepo-changed-projects-plugin ]; then
+          if [ -d ~/.m2/repository/io/github/doug-hawley/monorepo-build-plugin ]; then
             echo "✅ Plugin published successfully to Maven Local"
-            ls -la ~/.m2/repository/io/github/doug-hawley/monorepo-changed-projects-plugin/
+            ls -la ~/.m2/repository/io/github/doug-hawley/monorepo-build-plugin/
           else
             echo "❌ Plugin not found in Maven Local"
             exit 1

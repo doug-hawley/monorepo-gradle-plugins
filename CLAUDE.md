@@ -9,21 +9,21 @@ A Gradle plugin (Kotlin) that optimizes CI/CD build times in multi-module projec
 ## Build & Test Commands
 
 ```bash
-./gradlew build                  # Full build
-./gradlew unitTest               # Unit tests only
-./gradlew functionalTest         # Functional/integration tests only
-./gradlew check                  # All tests + validation
-./gradlew publishToMavenLocal    # Publish to local Maven repo
-./gradlew validatePlugins        # Validate plugin descriptor
+./gradlew :monorepo-build-plugin:build                  # Full build
+./gradlew :monorepo-build-plugin:unitTest               # Unit tests only
+./gradlew :monorepo-build-plugin:functionalTest         # Functional/integration tests only
+./gradlew :monorepo-build-plugin:check                  # All tests + validation
+./gradlew :monorepo-build-plugin:publishToMavenLocal    # Publish to local Maven repo
+./gradlew :monorepo-build-plugin:validatePlugins        # Validate plugin descriptor
 ```
 
 To run a single test class, use the `--tests` filter:
 ```bash
-./gradlew unitTest --tests "io.github.doughawley.monorepochangedprojects.GitChangedFilesDetectorTest"
-./gradlew functionalTest --tests "io.github.doughawley.monorepochangedprojects.functional.MonorepoPluginFunctionalTest"
+./gradlew :monorepo-build-plugin:unitTest --tests "io.github.doughawley.monorepobuild.GitChangedFilesDetectorTest"
+./gradlew :monorepo-build-plugin:functionalTest --tests "io.github.doughawley.monorepobuild.functional.MonorepoPluginFunctionalTest"
 ```
 
-After running tests, check results in `build/reports/tests/*/index.html` or `build/test-results/*/*.xml` for details.
+After running tests, check results in `monorepo-build-plugin/build/reports/tests/*/index.html` or `monorepo-build-plugin/build/test-results/*/*.xml` for details.
 
 ## Architecture
 
@@ -34,12 +34,12 @@ GitChangedFilesDetector  →  ProjectFileMapper  →  ProjectMetadataFactory  �
 (git diff/ls-files)          (file → project)       (dependency graph)         (results stored)
 ```
 
-**Key classes** (all under `src/main/kotlin/io/github/doughawley/monorepochangedprojects/`):
+**Key classes** (all under `monorepo-build-plugin/src/main/kotlin/io/github/doughawley/monorepobuild/`):
 
 | Class | Role |
 |---|---|
-| `MonorepoChangedProjectsPlugin` | Plugin entry point; registers extension and tasks; triggers metadata computation in `projectsEvaluated` |
-| `ProjectsChangedExtension` | User configuration DSL (`baseBranch`, `includeUntracked`, `excludePatterns`) and internal metadata storage |
+| `MonorepoBuildPlugin` | Plugin entry point; registers extension and tasks; triggers metadata computation in `projectsEvaluated` |
+| `MonorepoBuildExtension` | User configuration DSL (`baseBranch`, `includeUntracked`, `excludePatterns`) and internal metadata storage |
 | `PrintChangedProjectsTask` | Reads pre-computed metadata from extension and outputs results |
 | `GitChangedFilesDetector` | Runs `git diff`, `git diff --cached`, and `git ls-files` to find changed files; applies exclude patterns |
 | `ProjectFileMapper` | Maps changed file paths to Gradle project paths |
@@ -54,8 +54,8 @@ GitChangedFilesDetector  →  ProjectFileMapper  →  ProjectMetadataFactory  �
 
 ## Test Structure
 
-- **Unit tests**: `src/test/unit/kotlin/` — fast, isolated, mock-free Kotest tests
-- **Functional tests**: `src/test/functional/kotlin/` — Gradle TestKit tests that create real temporary projects with git repositories
+- **Unit tests**: `monorepo-build-plugin/src/test/unit/kotlin/` — fast, isolated, mock-free Kotest tests
+- **Functional tests**: `monorepo-build-plugin/src/test/functional/kotlin/` — Gradle TestKit tests that create real temporary projects with git repositories
 
 The functional tests use a standard 5-module dependency tree (`common-lib` ← `module1`, `module2` ← `app1`, `app2`) created by `StandardTestProject` and `TestProjectBuilder`.
 
@@ -92,7 +92,7 @@ Only maintain `README.md`, `CHANGELOG.md`, and `CLAUDE.md`. Do not create summar
 
 ## Release Process
 
-1. Update version in `build.gradle.kts`
+1. Update version in `monorepo-build-plugin/build.gradle.kts`
 2. Update `CHANGELOG.md`
 3. Commit, then tag: `git tag v1.x.x && git push origin v1.x.x`
 4. GitHub Actions creates the release automatically

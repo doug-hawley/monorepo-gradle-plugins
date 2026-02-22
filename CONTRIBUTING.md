@@ -1,4 +1,4 @@
-# Contributing to Monorepo Changed Projects Plugin
+# Contributing to Monorepo Build Plugin
 
 Thank you for your interest in contributing! This document provides guidelines and information for developers who want to contribute to this project.
 
@@ -24,29 +24,31 @@ Thank you for your interest in contributing! This document provides guidelines a
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/doug-hawley/monorepo-changed-projects-plugin.git
-cd monorepo-changed-projects-plugin
+git clone https://github.com/doug-hawley/monorepo-gradle-plugins.git
+cd monorepo-gradle-plugins
 ```
 
 ### Project Structure
 
 ```
-monorepo-changed-projects-plugin/
-├── src/
-│   ├── main/kotlin/com/bitmoxie/monorepochangedprojects/
-│   │   ├── MonorepoChangedProjectsPlugin.kt
-│   │   ├── DetectChangedProjectsTask.kt
-│   │   ├── ProjectsChangedExtension.kt
-│   │   ├── GitChangedFilesDetector.kt
-│   │   ├── ProjectFileMapper.kt
-│   │   ├── domain/
-│   │   │   ├── ChangedProjects.kt
-│   │   │   └── ProjectMetadata.kt
-│   │   └── git/
-│   │       └── GitCommandExecutor.kt
-│   └── test/
-│       ├── unit/kotlin/           # Unit tests
-│       └── functional/kotlin/     # Functional tests with Gradle TestKit
+monorepo-gradle-plugins/
+├── monorepo-build-plugin/
+│   ├── src/
+│   │   ├── main/kotlin/io/github/doughawley/monorepobuild/
+│   │   │   ├── MonorepoBuildPlugin.kt
+│   │   │   ├── MonorepoBuildExtension.kt
+│   │   │   ├── PrintChangedProjectsTask.kt
+│   │   │   ├── GitChangedFilesDetector.kt
+│   │   │   ├── ProjectFileMapper.kt
+│   │   │   ├── domain/
+│   │   │   │   ├── ChangedProjects.kt
+│   │   │   │   └── ProjectMetadata.kt
+│   │   │   └── git/
+│   │   │       └── GitCommandExecutor.kt
+│   │   └── test/
+│   │       ├── unit/kotlin/           # Unit tests
+│   │       └── functional/kotlin/     # Functional tests with Gradle TestKit
+│   └── build.gradle.kts
 ├── build.gradle.kts
 ├── settings.gradle.kts
 └── gradle.properties
@@ -56,13 +58,11 @@ monorepo-changed-projects-plugin/
 
 The plugin consists of several key components:
 
-1. **MonorepoChangedProjectsPlugin** - Main plugin class that registers tasks and extensions
-2. **DetectChangedProjectsTask** - Gradle task that orchestrates change detection
+1. **MonorepoBuildPlugin** - Main plugin class that registers tasks and extensions
+2. **MonorepoBuildExtension** - Configuration DSL and results storage
 3. **GitChangedFilesDetector** - Detects changed files using git commands
 4. **ProjectFileMapper** - Maps changed files to Gradle projects
 5. **ChangedProjects** - Domain object for convenient access to change information
-
-For more details, see [copilot-instructions.md](copilot-instructions.md).
 
 ## Building the Plugin
 
@@ -71,13 +71,13 @@ For more details, see [copilot-instructions.md](copilot-instructions.md).
 Build the plugin and run all tests:
 
 ```bash
-./gradlew build
+./gradlew :monorepo-build-plugin:build
 ```
 
 ### Quick Build (Skip Tests)
 
 ```bash
-./gradlew build -x test
+./gradlew :monorepo-build-plugin:build -x test
 ```
 
 ### Assemble Only
@@ -85,10 +85,10 @@ Build the plugin and run all tests:
 Create the JAR without running tests:
 
 ```bash
-./gradlew assemble
+./gradlew :monorepo-build-plugin:assemble
 ```
 
-The built plugin JAR will be in `build/libs/monorepo-changed-projects-plugin-1.0.0.jar`.
+The built plugin JAR will be in `monorepo-build-plugin/build/libs/monorepo-build-plugin-1.1.0.jar`.
 
 ## Running Tests
 
@@ -97,31 +97,31 @@ This project uses [Kotest](https://kotest.io/) for testing with separate unit an
 ### Run All Tests
 
 ```bash
-./gradlew test
+./gradlew :monorepo-build-plugin:check
 ```
 
 ### Run Unit Tests Only
 
 ```bash
-./gradlew unitTest
+./gradlew :monorepo-build-plugin:unitTest
 ```
 
 ### Run Functional Tests Only
 
 ```bash
-./gradlew functionalTest
+./gradlew :monorepo-build-plugin:functionalTest
 ```
 
 ### Run Tests with Logging
 
 ```bash
-./gradlew test --info
+./gradlew :monorepo-build-plugin:unitTest --info
 ```
 
 ### Test Structure
 
-- **Unit Tests** (`src/test/unit/kotlin/`) - Fast, isolated tests for individual components
-- **Functional Tests** (`src/test/functional/kotlin/`) - End-to-end tests using Gradle TestKit
+- **Unit Tests** (`monorepo-build-plugin/src/test/unit/kotlin/`) - Fast, isolated tests for individual components
+- **Functional Tests** (`monorepo-build-plugin/src/test/functional/kotlin/`) - End-to-end tests using Gradle TestKit
 
 For more information on testing, see:
 - [TEST_STRUCTURE.md](TEST_STRUCTURE.md)
@@ -226,12 +226,12 @@ For more details, see [RELEASE_PLEASE_GUIDE.md](RELEASE_PLEASE_GUIDE.md).
 
 1. **Run tests**: Ensure all tests pass
    ```bash
-   ./gradlew test
+   ./gradlew :monorepo-build-plugin:check
    ```
 
 2. **Validate plugin**: Check plugin configuration
    ```bash
-   ./gradlew validatePlugins
+   ./gradlew :monorepo-build-plugin:validatePlugins
    ```
 
 3. **Check code style**: Ensure code follows conventions
@@ -310,7 +310,7 @@ This triggers the release workflow.
 Publish to Maven Local for testing:
 
 ```bash
-./gradlew publishToMavenLocal
+./gradlew :monorepo-build-plugin:publishToMavenLocal
 ```
 
 Then in a test project:
@@ -320,7 +320,7 @@ repositories {
 }
 
 plugins {
-    id("io.github.doug-hawley.monorepo-changed-projects-plugin") version "1.0.0"
+    id("io.github.doug-hawley.monorepo-build-plugin") version "1.1.0"
 }
 ```
 
@@ -345,7 +345,7 @@ mkdir test-project
 cd test-project
 git init
 # Create build.gradle.kts with your plugin
-./gradlew detectChangedProjects
+./gradlew printChangedProjects
 ```
 
 ### Debugging
@@ -353,7 +353,7 @@ git init
 Run Gradle with debug logging:
 
 ```bash
-./gradlew detectChangedProjects --debug
+./gradlew printChangedProjects --debug
 ```
 
 Run tests with IntelliJ IDEA debugger:
@@ -374,9 +374,8 @@ git diff --staged --name-only
 
 ## Need Help?
 
-- **Questions**: Open a [GitHub Discussion](https://github.com/doug-hawley/monorepo-changed-projects-plugin/discussions)
-- **Bugs**: Report via [GitHub Issues](https://github.com/doug-hawley/monorepo-changed-projects-plugin/issues)
-- **Documentation**: Check [copilot-instructions.md](copilot-instructions.md) for architecture details
+- **Questions**: Open a [GitHub Discussion](https://github.com/doug-hawley/monorepo-gradle-plugins/discussions)
+- **Bugs**: Report via [GitHub Issues](https://github.com/doug-hawley/monorepo-gradle-plugins/issues)
 
 ## License
 

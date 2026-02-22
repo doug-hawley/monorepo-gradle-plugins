@@ -1,8 +1,8 @@
 {
   "release-type": "simple",
   "packages": {
-    ".": {
-      "package-name": "monorepo-changed-projects-plugin",
+    "monorepo-build-plugin": {
+      "package-name": "monorepo-build-plugin",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
@@ -11,7 +11,7 @@
       "extra-files": [
         {
           "type": "generic",
-          "path": "build.gradle.kts",
+          "path": "monorepo-build-plugin/build.gradle.kts",
           "glob": false
         },
         {

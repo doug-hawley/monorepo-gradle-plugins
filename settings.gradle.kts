@@ -1,1 +1,2 @@
-rootProject.name = "monorepo-changed-projects-plugin"
+rootProject.name = "monorepo-gradle-plugins"
+include("monorepo-build-plugin")

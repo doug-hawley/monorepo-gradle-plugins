@@ -1,6 +1,6 @@
-# Monorepo Changed Projects Plugin
+# Monorepo Build Plugin
 
-[![CI](https://github.com/doug-hawley/monorepo-changed-projects-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/doug-hawley/monorepo-changed-projects-plugin/actions/workflows/ci.yml)
+[![CI](https://github.com/doug-hawley/monorepo-gradle-plugins/actions/workflows/ci.yml/badge.svg)](https://github.com/doug-hawley/monorepo-gradle-plugins/actions/workflows/ci.yml)
 
 A Gradle plugin designed to optimize build times in large multi-module Gradle projects and monorepos by detecting which projects have changed based on git history.
 
@@ -38,7 +38,7 @@ This dramatically reduces build times in CI/CD pipelines by avoiding unnecessary
 
 ```kotlin
 plugins {
-    id("io.github.doug-hawley.monorepo-changed-projects-plugin") version "1.1.0" // x-release-please-version
+    id("io.github.doug-hawley.monorepo-build-plugin") version "1.1.0" // x-release-please-version
 }
 ```
 
@@ -47,7 +47,7 @@ plugins {
 ### Configure the plugin
 
 ```kotlin
-projectsChanged {
+monorepoBuild {
     baseBranch = "main"  // default
     includeUntracked = true  // default
     excludePatterns = listOf(".*\\.md", "docs/.*")
@@ -75,13 +75,13 @@ This task will:
 
 ### Access changed projects in other tasks
 
-The plugin computes results during the configuration phase, so any task can access them directly from the `projectsChanged` extension — no `dependsOn` needed:
+The plugin computes results during the configuration phase, so any task can access them directly from the `monorepoBuild` extension — no `dependsOn` needed:
 
 ```kotlin
 tasks.register("customTask") {
     doLast {
         val extension = project.extensions.getByType(
-            io.github.doughawley.monorepochangedprojects.ProjectsChangedExtension::class.java
+            io.github.doughawley.monorepobuild.MonorepoBuildExtension::class.java
         )
         val changedProjects = extension.allAffectedProjects
         println("Changed projects: $changedProjects")
@@ -99,7 +99,7 @@ tasks.register("customTask") {
 tasks.register("showChangedFiles") {
     doLast {
         val extension = project.extensions.getByType(
-            io.github.doughawley.monorepochangedprojects.ProjectsChangedExtension::class.java
+            io.github.doughawley.monorepobuild.MonorepoBuildExtension::class.java
         )
 
         // Map of project path -> list of changed files in that project
@@ -129,13 +129,13 @@ tasks.register("showChangedFiles") {
 The `ChangedProjects` domain object provides a richer API over the raw metadata map:
 
 ```kotlin
-import io.github.doughawley.monorepochangedprojects.ProjectsChangedExtension
-import io.github.doughawley.monorepochangedprojects.domain.ChangedProjects
-import io.github.doughawley.monorepochangedprojects.domain.ProjectMetadata
+import io.github.doughawley.monorepobuild.MonorepoBuildExtension
+import io.github.doughawley.monorepobuild.domain.ChangedProjects
+import io.github.doughawley.monorepobuild.domain.ProjectMetadata
 
 tasks.register("analyzeWithChangedProjects") {
     doLast {
-        val extension = project.extensions.getByType(ProjectsChangedExtension::class.java)
+        val extension = project.extensions.getByType(MonorepoBuildExtension::class.java)
         val metadataMap = extension.metadataMap
 
         val changedProjects = ChangedProjects(metadataMap.values.toList())
@@ -186,10 +186,10 @@ Apply the plugin in your root `build.gradle.kts` and configure it for your branc
 ```kotlin
 // In root build.gradle.kts
 plugins {
-    id("io.github.doug-hawley.monorepo-changed-projects-plugin") version "1.1.0" // x-release-please-version
+    id("io.github.doug-hawley.monorepo-build-plugin") version "1.1.0" // x-release-please-version
 }
 
-projectsChanged {
+monorepoBuild {
     baseBranch = "develop"
     excludePatterns = listOf(".*\\.md", "\\.github/.*", "docs/.*")
 }
@@ -213,7 +213,7 @@ Use in CI to only test changed modules:
 tasks.register("ciTest") {
     doLast {
         val extension = project.extensions.getByType(
-            io.github.doughawley.monorepochangedprojects.ProjectsChangedExtension::class.java
+            io.github.doughawley.monorepobuild.MonorepoBuildExtension::class.java
         )
         val changedProjects = extension.allAffectedProjects
 
@@ -235,12 +235,12 @@ tasks.register("ciTest") {
 Use prefix filtering to build only changed applications:
 
 ```kotlin
-import io.github.doughawley.monorepochangedprojects.ProjectsChangedExtension
-import io.github.doughawley.monorepochangedprojects.domain.ChangedProjects
+import io.github.doughawley.monorepobuild.MonorepoBuildExtension
+import io.github.doughawley.monorepobuild.domain.ChangedProjects
 
 tasks.register("buildChangedApps") {
     doLast {
-        val extension = project.extensions.getByType(ProjectsChangedExtension::class.java)
+        val extension = project.extensions.getByType(MonorepoBuildExtension::class.java)
         val changedProjects = ChangedProjects(extension.metadataMap.values.toList())
 
         // Get only changed apps (assuming apps are under :apps directory)
@@ -380,9 +380,9 @@ This is expected if files in the root directory (outside of subproject directori
 
 ## Support & Contributions
 
-- **Issues**: Report bugs or request features via [GitHub Issues](https://github.com/doug-hawley/monorepo-changed-projects-plugin/issues)
+- **Issues**: Report bugs or request features via [GitHub Issues](https://github.com/doug-hawley/monorepo-gradle-plugins/issues)
 - **Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines
-- **Questions**: Start a discussion in [GitHub Discussions](https://github.com/doug-hawley/monorepo-changed-projects-plugin/discussions)
+- **Questions**: Start a discussion in [GitHub Discussions](https://github.com/doug-hawley/monorepo-gradle-plugins/discussions)
 
 ## License
 
