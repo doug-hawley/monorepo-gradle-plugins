@@ -6,9 +6,11 @@ import org.gradle.api.tasks.TaskAction
 /**
  * Task that prints which projects have changed based on git history and dependency analysis.
  *
- * This task reads pre-computed metadata from the configuration phase and outputs the results.
- * Metadata computation happens during gradle.afterEvaluate to ensure all project dependencies
- * are fully resolved.
+ * Output format:
+ *   - Directly changed projects are listed with their changed files (relative to the project directory).
+ *   - Transitively affected projects are listed with an "(affected via ...)" annotation naming
+ *     the direct dependencies that carry the change.
+ *   - File lists are capped at FILE_DISPLAY_LIMIT entries.
  */
 abstract class PrintChangedProjectsTask : DefaultTask() {
 
@@ -32,13 +34,71 @@ abstract class PrintChangedProjectsTask : DefaultTask() {
             }
         }
 
-        // Read pre-computed metadata from configuration phase
-        val directlyChangedProjects = extension.changedFilesMap.keys
+        val allAffected = extension.allAffectedProjects
 
-        val directlyChangedList = if (directlyChangedProjects.isEmpty()) "" else directlyChangedProjects.joinToString(", ")
-        logger.lifecycle("Directly changed projects: $directlyChangedList")
+        if (allAffected.isEmpty()) {
+            logger.lifecycle("No projects have changed.")
+            return
+        }
 
-        val allAffectedList = if (extension.allAffectedProjects.isEmpty()) "" else extension.allAffectedProjects.joinToString(", ")
-        logger.lifecycle("All affected projects (including dependents): $allAffectedList")
+        val directlyChanged = extension.changedFilesMap.keys
+            .filter { it in allAffected }
+            .sorted()
+
+        val transitivelyAffected = allAffected
+            .filter { it !in extension.changedFilesMap.keys }
+            .sorted()
+
+        val sb = StringBuilder()
+        sb.appendLine("Changed projects:")
+
+        directlyChanged.forEach { projectPath ->
+            sb.appendLine()
+            sb.appendLine("  $projectPath")
+            val files = buildDisplayFiles(projectPath, extension.changedFilesMap)
+            files.take(FILE_DISPLAY_LIMIT).forEach { sb.appendLine("    - $it") }
+            if (files.size > FILE_DISPLAY_LIMIT) {
+                sb.appendLine("    ... and ${files.size - FILE_DISPLAY_LIMIT} more")
+            }
+        }
+
+        if (transitivelyAffected.isNotEmpty()) {
+            sb.appendLine()
+            val maxPathLen = transitivelyAffected.maxOf { it.length }
+            transitivelyAffected.forEach { projectPath ->
+                val via = extension.metadataMap[projectPath]
+                    ?.dependencies
+                    ?.filter { it.hasChanges() }
+                    ?.map { it.fullyQualifiedName }
+                    ?.sorted()
+                    ?.joinToString(", ")
+                    .orEmpty()
+                val annotation = if (via.isNotEmpty()) "  (affected via $via)" else ""
+                sb.appendLine("  ${projectPath.padEnd(maxPathLen)}$annotation")
+            }
+        }
+
+        logger.lifecycle(sb.toString().trimEnd())
+    }
+
+    private fun buildDisplayFiles(projectPath: String, changedFilesMap: Map<String, List<String>>): List<String> {
+        val files = changedFilesMap[projectPath].orEmpty()
+        val projectDir = project.rootProject.findProject(projectPath)
+            ?.projectDir
+            ?.relativeTo(project.rootProject.rootDir)
+            ?.path
+            ?.replace('\\', '/')
+            .orEmpty()
+        return files.map { file ->
+            if (projectDir.isNotEmpty() && file.startsWith("$projectDir/")) {
+                file.removePrefix("$projectDir/")
+            } else {
+                file
+            }
+        }.sorted()
+    }
+
+    companion object {
+        internal const val FILE_DISPLAY_LIMIT = 50
     }
 }
