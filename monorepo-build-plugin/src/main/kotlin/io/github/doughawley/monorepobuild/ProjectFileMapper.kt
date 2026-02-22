@@ -21,15 +21,23 @@ class ProjectFileMapper {
     /**
      * Maps changed files to their containing Gradle projects.
      *
+     * Each file is assigned to exactly one project — the deepest directory ancestor
+     * that is a Gradle project. This prevents intermediate hierarchy nodes (e.g. an
+     * `:apps` container with no build file) from being reported as changed when only
+     * files inside a child project (e.g. `:apps:app1`) have changed.
+     *
      * @param rootProject The root Gradle project
      * @param changedFiles Set of changed file paths relative to root
      * @return Map of project paths to lists of changed files in that project
      */
     fun mapChangedFilesToProjects(rootProject: Project, changedFiles: Set<String>): Map<String, List<String>> {
-        val projectToFilesMap = mutableMapOf<String, MutableList<String>>()
+        if (changedFiles.isEmpty()) return emptyMap()
 
-        rootProject.allprojects.forEach { subproject ->
-            val projectPath = try {
+        // Build a list of (normalizedDirPath, gradleProjectPath) for all subprojects.
+        // Sort by directory path length descending so the deepest (most specific) match is
+        // always found first, ensuring a file in :apps:app1 is not also attributed to :apps.
+        val subprojectsByDir = rootProject.subprojects.map { subproject ->
+            val dirPath = try {
                 subproject.projectDir.relativeTo(rootProject.rootDir).path
             } catch (e: IllegalArgumentException) {
                 throw IllegalArgumentException(
@@ -39,37 +47,21 @@ class ProjectFileMapper {
                     e
                 )
             }
+            val normalizedDirPath = dirPath.replace('\\', '/') + "/"
+            normalizedDirPath to subproject.path
+        }.sortedByDescending { it.first.length }
 
-            // Normalize path separators to forward slashes for cross-platform compatibility
-            val normalizedProjectPath = projectPath.replace('\\', '/')
+        val projectToFilesMap = mutableMapOf<String, MutableList<String>>()
 
-            // An empty or "." path means this is the root project (its projectDir == rootDir).
-            // Use an empty string as the sentinel so isFileInProject() can identify it and
-            // apply root-project-specific matching logic (exclude files that belong to subprojects).
-            val normalizedProjectPathWithSlash = if (normalizedProjectPath.isEmpty() || normalizedProjectPath == ".") "" else "$normalizedProjectPath/"
+        changedFiles.forEach { file ->
+            val ownerPath = subprojectsByDir
+                .firstOrNull { (dirPath, _) -> file.startsWith(dirPath) }
+                ?.second
+                ?: rootProject.path
 
-            changedFiles.forEach { file ->
-                if (isFileInProject(file, normalizedProjectPathWithSlash, rootProject)) {
-                    projectToFilesMap.getOrPut(subproject.path) { mutableListOf() }.add(file)
-                }
-            }
+            projectToFilesMap.getOrPut(ownerPath) { mutableListOf() }.add(file)
         }
 
         return projectToFilesMap
-    }
-
-    private fun isFileInProject(file: String, normalizedProjectPath: String, rootProject: Project): Boolean {
-        // For root project, only match files in root directory (not in subprojects)
-        if (normalizedProjectPath.isEmpty()) {
-            // Check if file is in root and not in any subproject directory
-            val isInSubproject = rootProject.subprojects.any { sub ->
-                val subPath = sub.projectDir.relativeTo(rootProject.rootDir).path.replace('\\', '/')
-                file.startsWith("$subPath/")
-            }
-            return !isInSubproject
-        } else {
-            // For subprojects, match if file is in project directory
-            return file.startsWith(normalizedProjectPath)
-        }
     }
 }

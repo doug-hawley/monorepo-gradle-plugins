@@ -59,6 +59,14 @@ GitChangedFilesDetector  →  ProjectFileMapper  →  ProjectMetadataFactory  �
 
 The functional tests use a standard 5-module dependency tree (`common-lib` ← `module1`, `module2` ← `app1`, `app2`) created by `StandardTestProject` and `TestProjectBuilder`.
 
+**Functional test file convention**: one file per task. All scenarios for a given task live in its file regardless of what behaviour they exercise. Current files:
+
+| File | Task |
+|---|---|
+| `MonorepoPluginFunctionalTest.kt` | `printChangedProjects` |
+| `BuildChangedProjectsFunctionalTest.kt` | `buildChangedProjects` |
+| `MonorepoPluginConfigurationTest.kt` | `printChangedProjects` (configuration/exclude scenarios) |
+
 ## Code Style
 
 - Always use block bodies with `{}` and explicit `return`; never expression bodies with `=`
