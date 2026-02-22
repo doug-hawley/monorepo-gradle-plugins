@@ -11,7 +11,7 @@ monorepoBuild {
 }
 
 // The plugin computes results during the configuration phase, so any task can read
-// from the extension directly — no dependsOn("printChangedProjects") needed.
+// from the extension directly — no dependsOn("printChangedProjectsFromBranch") needed.
 
 // Example 1: Simple - Just list changed projects
 tasks.register("listChangedProjects") {

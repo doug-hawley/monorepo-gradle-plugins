@@ -57,15 +57,15 @@ monorepoBuild {
 ### Run the detection task
 
 ```bash
-./gradlew printChangedProjects
+./gradlew printChangedProjectsFromBranch
 ```
 
 ### Build only changed projects
 
-The plugin registers a `buildChangedProjects` task that automatically builds only the projects affected by changes:
+The plugin registers a `buildChangedProjectsFromBranch` task that automatically builds only the projects affected by changes:
 
 ```bash
-./gradlew buildChangedProjects
+./gradlew buildChangedProjectsFromBranch
 ```
 
 This task will:
@@ -199,10 +199,10 @@ Then run the built-in tasks:
 
 ```bash
 # Detect and print which projects changed
-./gradlew printChangedProjects
+./gradlew printChangedProjectsFromBranch
 
 # Build only the affected projects
-./gradlew buildChangedProjects
+./gradlew buildChangedProjectsFromBranch
 ```
 
 ### CI/CD Integration
@@ -357,7 +357,7 @@ This can happen if:
 Solution:
 ```bash
 git fetch origin
-./gradlew printChangedProjects
+./gradlew printChangedProjectsFromBranch
 ```
 
 ### No projects detected despite changes
@@ -365,7 +365,7 @@ git fetch origin
 Check your `excludePatterns` configuration - you may be inadvertently excluding files. Enable logging to see what files are being detected:
 
 ```bash
-./gradlew printChangedProjects --info
+./gradlew printChangedProjectsFromBranch --info
 ```
 
 ### Root project always shows as changed

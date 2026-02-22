@@ -16,7 +16,7 @@ class MonorepoBuildPluginTest : FunSpec({
         project.pluginManager.apply("io.github.doug-hawley.monorepo-build-plugin")
 
         // then
-        val task = project.tasks.findByName("printChangedProjects")
+        val task = project.tasks.findByName("printChangedProjectsFromBranch")
         task shouldNotBe null
         task.shouldBeInstanceOf<PrintChangedProjectsTask>()
     }
@@ -71,7 +71,7 @@ class MonorepoBuildPluginTest : FunSpec({
         project.pluginManager.apply("io.github.doug-hawley.monorepo-build-plugin")
 
         // when
-        val task = project.tasks.findByName("printChangedProjects")
+        val task = project.tasks.findByName("printChangedProjectsFromBranch")
 
         // then
         task shouldNotBe null
@@ -87,7 +87,7 @@ class MonorepoBuildPluginTest : FunSpec({
                 .withProjectDir(tempDir)
                 .build()
             project.pluginManager.apply("io.github.doug-hawley.monorepo-build-plugin")
-            val task = project.tasks.findByName("printChangedProjects") as PrintChangedProjectsTask
+            val task = project.tasks.findByName("printChangedProjectsFromBranch") as PrintChangedProjectsTask
 
             // when
             task.detectChanges()

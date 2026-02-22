@@ -50,7 +50,7 @@ class MonorepoBuildPlugin : Plugin<Project> {
                     // Wire up dependsOn for each affected project's build task now that we know
                     // which projects changed. This must happen in the configuration phase so
                     // Gradle can include them in the task graph before execution begins.
-                    val buildChangedTask = project.tasks.named("buildChangedProjects")
+                    val buildChangedTask = project.tasks.named("buildChangedProjectsFromBranch")
                     rootExtension.allAffectedProjects.forEach { projectPath ->
                         val targetProject = project.rootProject.findProject(projectPath)
                         if (targetProject != null) {
@@ -76,16 +76,16 @@ class MonorepoBuildPlugin : Plugin<Project> {
             }
         }
 
-        // Register the printChangedProjects task
-        project.tasks.register("printChangedProjects", PrintChangedProjectsTask::class.java).configure {
+        // Register the printChangedProjectsFromBranch task
+        project.tasks.register("printChangedProjectsFromBranch", PrintChangedProjectsTask::class.java).configure {
             group = "verification"
             description = "Detects which projects have changed based on git history"
         }
 
-        // Register the buildChangedProjects task.
+        // Register the buildChangedProjectsFromBranch task.
         // Actual dependsOn wiring for affected project build tasks is added dynamically
         // in the projectsEvaluated hook above, after changed projects are known.
-        project.tasks.register("buildChangedProjects").configure {
+        project.tasks.register("buildChangedProjectsFromBranch").configure {
             group = "build"
             description = "Builds only the projects that have been affected by changes"
             doLast {
