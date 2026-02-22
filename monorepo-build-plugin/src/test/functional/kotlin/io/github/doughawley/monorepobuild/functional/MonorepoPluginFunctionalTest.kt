@@ -356,4 +356,113 @@ class MonorepoPluginFunctionalTest : FunSpec({
             Projects.APP2
         )
     }
+
+    // -- Hierarchy node tests (intermediate directories with no build file) --
+
+    test("hierarchy node does not appear in directly changed projects when child file changes") {
+        // Setup: standard project has apps/ and modules/ as hierarchy nodes without build files
+        val project = testProjectListener.createStandardProject()
+
+        // Make changes to apps/app1
+        project.appendToFile(Files.APP1_SOURCE, "\n// Modified")
+        project.commitAll("Change app1")
+
+        // Execute
+        val result = project.runTask("printChangedProjects")
+
+        // Assert
+        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        val directlyChanged = result.extractDirectlyChangedProjects()
+        directlyChanged shouldContain Projects.APP1
+        directlyChanged shouldNotContain ":apps"
+    }
+
+    test("hierarchy node does not appear in all affected projects when child file changes") {
+        // Setup
+        val project = testProjectListener.createStandardProject()
+
+        // Make changes to modules/module1 (apps/app1 depends on it transitively)
+        project.appendToFile(Files.MODULE1_SOURCE, "\n// Modified")
+        project.commitAll("Change module1")
+
+        // Execute
+        val result = project.runTask("printChangedProjects")
+
+        // Assert: real projects appear, hierarchy nodes do not
+        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        val changed = result.extractChangedProjects()
+        changed shouldContain Projects.MODULE1
+        changed shouldContain Projects.APP1
+        changed shouldNotContain ":modules"
+        changed shouldNotContain ":apps"
+    }
+
+    test("multiple hierarchy nodes are excluded when children in sibling trees change") {
+        // Setup
+        val project = testProjectListener.createStandardProject()
+
+        project.appendToFile(Files.APP2_SOURCE, "\n// Modified")
+        project.appendToFile(Files.MODULE2_SOURCE, "\n// Modified")
+        project.commitAll("Change app2 and module2")
+
+        // Execute
+        val result = project.runTask("printChangedProjects")
+
+        // Assert
+        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        val directlyChanged = result.extractDirectlyChangedProjects()
+        directlyChanged shouldContain Projects.APP2
+        directlyChanged shouldContain Projects.MODULE2
+        directlyChanged shouldNotContain ":apps"
+        directlyChanged shouldNotContain ":modules"
+    }
+
+    test("untracked file in nested project does not cause hierarchy node to appear") {
+        // Setup
+        val project = testProjectListener.createStandardProject()
+
+        // Create an untracked file in modules/module2 (not committed)
+        project.createNewFile(
+            "modules/module2/src/main/kotlin/com/example/NewFeature.kt",
+            "package com.example\nclass NewFeature"
+        )
+
+        // Execute
+        val result = project.runTask("printChangedProjects")
+
+        // Assert: :modules:module2 detected via untracked file, :modules is not
+        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        val directlyChanged = result.extractDirectlyChangedProjects()
+        directlyChanged shouldContain Projects.MODULE2
+        directlyChanged shouldNotContain ":modules"
+    }
+
+    test("three-level hierarchy nodes do not appear for deeply nested project change") {
+        // Setup: project with three levels — :services:billing:api, :services:billing:impl
+        val project = TestProjectBuilder(testProjectListener.getTestProjectDir())
+            .withSubproject("services/billing/api")
+            .withSubproject("services/billing/impl", dependsOn = listOf("services/billing/api"))
+            .applyPlugin()
+            .withRemote()
+            .build()
+        project.initGit()
+        project.commitAll("Initial commit")
+        project.pushToRemote()
+
+        project.appendToFile(
+            "services/billing/impl/src/main/kotlin/com/example/Impl.kt",
+            "\n// Modified"
+        )
+        project.commitAll("Change billing impl")
+
+        // Execute
+        val result = project.runTask("printChangedProjects")
+
+        // Assert: only the concrete project appears, not :services or :services:billing
+        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        val directlyChanged = result.extractDirectlyChangedProjects()
+        directlyChanged shouldContain ":services:billing:impl"
+        directlyChanged shouldNotContain ":services"
+        directlyChanged shouldNotContain ":services:billing"
+    }
 })
