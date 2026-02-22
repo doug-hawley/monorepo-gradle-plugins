@@ -109,7 +109,7 @@ class MonorepoBuildPlugin : Plugin<Project> {
             }
         }
 
-        project.logger.lifecycle("Monorepo Build Plugin applied to ${project.name}")
+        project.logger.info("Monorepo Build Plugin applied to ${project.name}")
     }
 
     /**
@@ -122,9 +122,9 @@ class MonorepoBuildPlugin : Plugin<Project> {
     internal fun computeMetadata(project: Project, extension: MonorepoBuildExtension) {
         val logger = project.logger
 
-        logger.lifecycle("Computing changed project metadata...")
-        logger.lifecycle("Base branch: ${extension.baseBranch}")
-        logger.lifecycle("Include untracked: ${extension.includeUntracked}")
+        logger.info("Computing changed project metadata...")
+        logger.info("Base branch: ${extension.baseBranch}")
+        logger.info("Include untracked: ${extension.includeUntracked}")
 
         // Initialize detectors and factories, sharing a single GitCommandExecutor instance
         val gitExecutor = GitCommandExecutor(logger)
@@ -165,8 +165,8 @@ class MonorepoBuildPlugin : Plugin<Project> {
         extension.allAffectedProjects = allAffectedProjects
         extension.changedFilesMap = filteredChangedFilesMap
 
-        logger.lifecycle("Changed files count: ${changedFiles.size}")
-        logger.lifecycle("All affected projects (including dependents): ${allAffectedProjects.joinToString(", ").ifEmpty { "none" }}")
+        logger.info("Changed files count: ${changedFiles.size}")
+        logger.info("All affected projects (including dependents): ${allAffectedProjects.joinToString(", ").ifEmpty { "none" }}")
     }
 
     /**

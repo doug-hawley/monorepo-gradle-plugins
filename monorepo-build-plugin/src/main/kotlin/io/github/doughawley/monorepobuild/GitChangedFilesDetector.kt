@@ -35,29 +35,29 @@ class GitChangedFilesDetector(
         try {
             // Get changed files compared to base branch (committed changes)
             val branchChanges = getChangedFilesSinceBaseBranch(gitDir, extension.baseBranch)
-            logger.lifecycle("Files from branch comparison: ${branchChanges.size}")
+            logger.info("Files from branch comparison: ${branchChanges.size}")
             changedFiles.addAll(branchChanges)
 
             // Also get uncommitted working tree changes (modified files not yet committed)
             val workingTreeChanges = getWorkingTreeChanges(gitDir)
-            logger.lifecycle("Working tree changes: ${workingTreeChanges.size}")
+            logger.info("Working tree changes: ${workingTreeChanges.size}")
             changedFiles.addAll(workingTreeChanges)
 
             // Get staged files (files added with git add but not yet committed)
             val staged = getStagedFiles(gitDir)
-            logger.lifecycle("Staged files: ${staged.size}")
+            logger.info("Staged files: ${staged.size}")
             changedFiles.addAll(staged)
 
             // Include untracked files if configured
             if (extension.includeUntracked) {
                 val untracked = getUntrackedFiles(gitDir)
-                logger.lifecycle("Untracked files: ${untracked.size}")
+                logger.info("Untracked files: ${untracked.size}")
                 changedFiles.addAll(untracked)
             }
 
-            logger.lifecycle("Total changed files detected: ${changedFiles.size}")
+            logger.info("Total changed files detected: ${changedFiles.size}")
             if (changedFiles.isNotEmpty()) {
-                logger.lifecycle("Changed files: ${changedFiles.take(5).joinToString(", ")}${if (changedFiles.size > 5) "..." else ""}")
+                logger.info("Changed files: ${changedFiles.take(5).joinToString(", ")}${if (changedFiles.size > 5) "..." else ""}")
             }
         } catch (e: Exception) {
             logger.error("Error executing git command: ${e.message}", e)
