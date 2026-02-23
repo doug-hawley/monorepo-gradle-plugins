@@ -26,6 +26,7 @@ import java.io.File
 class TestProjectListener : TestListener {
 
     private var currentTestDir: File? = null
+    private var currentTestProject: TestProject? = null
 
     /**
      * Creates and initializes a standard test project structure.
@@ -34,7 +35,7 @@ class TestProjectListener : TestListener {
     fun createStandardProject(): TestProject {
         val testDir = currentTestDir
             ?: throw IllegalStateException("Test project directory not initialized. Test may not have started yet.")
-        return StandardTestProject.createAndInitialize(testDir)
+        return StandardTestProject.createAndInitialize(testDir).also { currentTestProject = it }
     }
 
     /**
@@ -44,7 +45,7 @@ class TestProjectListener : TestListener {
     fun createStandardProjectWithoutGit(): TestProject {
         val testDir = currentTestDir
             ?: throw IllegalStateException("Test project directory not initialized. Test may not have started yet.")
-        return StandardTestProject.create(testDir)
+        return StandardTestProject.create(testDir).also { currentTestProject = it }
     }
 
     /**
@@ -64,6 +65,8 @@ class TestProjectListener : TestListener {
     }
 
     override suspend fun afterEach(testCase: TestCase, result: TestResult) {
+        currentTestProject?.gradleUserHome?.deleteRecursively()
+        currentTestProject = null
         currentTestDir?.let { dir ->
             if (dir.exists()) {
                 dir.deleteRecursively()

@@ -3,6 +3,7 @@ package io.github.doughawley.monorepobuild.functional
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import java.io.File
+import kotlin.io.path.createTempDirectory
 
 /**
  * Builder for creating test Gradle projects for functional testing.
@@ -177,6 +178,8 @@ class TestProject(
     private val remoteDir: File? = null
 ) {
 
+    val gradleUserHome: File = createTempDirectory("gradle-user-home-").toFile()
+
     fun initGit() {
         if (useRemote && remoteDir != null) {
             // Create a bare repository to act as origin
@@ -236,19 +239,24 @@ class TestProject(
     }
 
     fun runTask(vararg tasks: String): BuildResult {
-        return GradleRunner.create()
-            .withProjectDir(projectDir)
+        return gradleRunner()
             .withArguments(tasks.toList() + "--stacktrace")
-            .withPluginClasspath()
             .build()
     }
 
     fun runTaskAndFail(vararg tasks: String): BuildResult {
+        return gradleRunner()
+            .withArguments(tasks.toList() + "--stacktrace")
+            .buildAndFail()
+    }
+
+    private fun gradleRunner(): GradleRunner {
+        val env = HashMap(System.getenv())
+        env["GRADLE_USER_HOME"] = gradleUserHome.absolutePath
         return GradleRunner.create()
             .withProjectDir(projectDir)
-            .withArguments(tasks.toList() + "--stacktrace")
+            .withEnvironment(env)
             .withPluginClasspath()
-            .buildAndFail()
     }
 
     private fun executeCommand(vararg command: String) {
