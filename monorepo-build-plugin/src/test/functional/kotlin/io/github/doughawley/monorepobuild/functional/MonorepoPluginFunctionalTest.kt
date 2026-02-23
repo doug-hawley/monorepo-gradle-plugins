@@ -371,6 +371,11 @@ class MonorepoPluginFunctionalTest : FunSpec({
         val result = project.runTask("printChangedProjects")
 
         // Assert
+        if (result.task(":printChangedProjects") == null) {
+            println("=== DIAGNOSTIC [test 17]: task was null ===")
+            println("Tasks executed: ${result.tasks.map { "${it.path}=${it.outcome}" }}")
+            println("Build output:\n${result.output}")
+        }
         result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
         val directlyChanged = result.extractDirectlyChangedProjects()
         directlyChanged shouldContain Projects.APP1
@@ -389,6 +394,11 @@ class MonorepoPluginFunctionalTest : FunSpec({
         val result = project.runTask("printChangedProjects")
 
         // Assert: real projects appear, hierarchy nodes do not
+        if (result.task(":printChangedProjects") == null) {
+            println("=== DIAGNOSTIC [test 18]: task was null ===")
+            println("Tasks executed: ${result.tasks.map { "${it.path}=${it.outcome}" }}")
+            println("Build output:\n${result.output}")
+        }
         result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
         val changed = result.extractChangedProjects()
         changed shouldContain Projects.MODULE1
@@ -409,6 +419,11 @@ class MonorepoPluginFunctionalTest : FunSpec({
         val result = project.runTask("printChangedProjects")
 
         // Assert
+        if (result.task(":printChangedProjects") == null) {
+            println("=== DIAGNOSTIC [test 19]: task was null ===")
+            println("Tasks executed: ${result.tasks.map { "${it.path}=${it.outcome}" }}")
+            println("Build output:\n${result.output}")
+        }
         result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
         val directlyChanged = result.extractDirectlyChangedProjects()
         directlyChanged shouldContain Projects.APP2
@@ -431,6 +446,11 @@ class MonorepoPluginFunctionalTest : FunSpec({
         val result = project.runTask("printChangedProjects")
 
         // Assert: :modules:module2 detected via untracked file, :modules is not
+        if (result.task(":printChangedProjects") == null) {
+            println("=== DIAGNOSTIC [test 20]: task was null ===")
+            println("Tasks executed: ${result.tasks.map { "${it.path}=${it.outcome}" }}")
+            println("Build output:\n${result.output}")
+        }
         result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
         val directlyChanged = result.extractDirectlyChangedProjects()
         directlyChanged shouldContain Projects.MODULE2
@@ -459,6 +479,11 @@ class MonorepoPluginFunctionalTest : FunSpec({
         val result = project.runTask("printChangedProjects")
 
         // Assert: only the concrete project appears, not :services or :services:billing
+        if (result.task(":printChangedProjects") == null) {
+            println("=== DIAGNOSTIC [test 21]: task was null ===")
+            println("Tasks executed: ${result.tasks.map { "${it.path}=${it.outcome}" }}")
+            println("Build output:\n${result.output}")
+        }
         result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
         val directlyChanged = result.extractDirectlyChangedProjects()
         directlyChanged shouldContain ":services:billing:impl"
