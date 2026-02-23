@@ -24,10 +24,12 @@ This dramatically reduces build times in CI/CD pipelines by avoiding unnecessary
 
 ## Features
 
-- Detects changed files by comparing against a base branch
+- Detects changed files by comparing against a base branch or a specific commit ref
 - Identifies which Gradle projects are affected by the changes
 - Reports dependent projects that are impacted by changes in their dependencies
 - Configurable base branch comparison
+- Commit-ref mode for CI pipelines that track a last-known-good SHA
+- Machine-consumable output file for shell-script-based pipeline integration
 - Option to include untracked files
 - Exclude patterns support (ignore documentation, config files, etc.)
 - Works with multi-module projects and monorepos of any size
@@ -72,6 +74,77 @@ This task will:
 1. Detect all changed projects (including those affected by dependency changes)
 2. Build each affected project automatically
 3. Report which projects were built
+
+### Comparing against a specific commit ref
+
+The tasks above compare against a branch (`baseBranch`). When your CI pipeline knows the last commit that was successfully built, you can compare against that exact SHA instead. This is more precise than branch comparison and avoids false positives when multiple commits have accumulated.
+
+The plugin provides three ref-mode tasks. All three require a commit ref, supplied either in the DSL or as a runtime property:
+
+```bash
+# Via runtime property (recommended for CI — no build script changes needed)
+./gradlew <task> -PmonorepoBuild.commitRef=<sha>
+
+# Via DSL (for a permanent per-project default)
+monorepoBuild {
+    commitRef = "abc123def"
+}
+```
+
+> **Note:** Ref-mode tasks use a two-dot diff (`git diff <ref> HEAD`), which only considers committed changes. Staged and untracked files are intentionally ignored — this mode is designed for clean CI workspaces.
+
+#### `printChangedProjectsFromRef`
+
+Prints changed projects in a human-readable format, useful for inspecting what a pipeline run would affect:
+
+```bash
+./gradlew printChangedProjectsFromRef -PmonorepoBuild.commitRef=abc123
+```
+
+#### `buildChangedProjectsFromRef`
+
+Builds all affected projects (including transitive dependents) since the given ref:
+
+```bash
+./gradlew buildChangedProjectsFromRef -PmonorepoBuild.commitRef=abc123
+```
+
+#### `writeChangedProjectsFromRef`
+
+Writes the list of affected project paths to a file — one path per line, no headers or annotations. Designed for consumption by shell scripts in CI/CD pipelines.
+
+```bash
+./gradlew writeChangedProjectsFromRef -PmonorepoBuild.commitRef=abc123
+```
+
+**Default output file:** `build/monorepo/changed-projects.txt`
+
+Example output:
+```
+:common-lib
+:modules:module1
+:apps:app1
+```
+
+An empty file is written when nothing has changed, so downstream scripts can always assume the file exists after the task runs.
+
+**Override the output path at runtime** (no build script changes needed):
+
+```bash
+./gradlew writeChangedProjectsFromRef \
+  -PmonorepoBuild.commitRef=abc123 \
+  -PmonorepoBuild.outputFile=ci/changed-projects.txt
+```
+
+**Override the output path permanently in the build script:**
+
+```kotlin
+tasks.named<io.github.doughawley.monorepobuild.WriteChangedProjectsFromRefTask>(
+    "writeChangedProjectsFromRef"
+) {
+    outputFile.set(layout.projectDirectory.file("ci/changed-projects.txt"))
+}
+```
 
 ### Access changed projects in other tasks
 
@@ -205,9 +278,34 @@ Then run the built-in tasks:
 ./gradlew buildChangedProjectsFromBranch
 ```
 
-### CI/CD Integration
+### CI/CD pipeline integration with writeChangedProjectsFromRef
 
-Use in CI to only test changed modules:
+Use `writeChangedProjectsFromRef` to drive shell-script-based pipelines. The task writes one Gradle project path per line to a file that subsequent pipeline steps can read.
+
+A typical two-step pipeline (shown here using [Vela](https://go-vela.github.io/docs/) syntax, but the pattern works in any CI system with a shared workspace):
+
+```yaml
+steps:
+  - name: detect-changes
+    image: gradle:8-jdk21
+    commands:
+      - ./gradlew writeChangedProjectsFromRef
+          -PmonorepoBuild.commitRef=$$VELA_BUILD_PREVIOUS_COMMIT
+
+  - name: build-changed
+    image: gradle:8-jdk21
+    commands:
+      - |
+        while IFS= read -r project || [ -n "$project" ]; do
+          ./gradlew "${project}:build"
+        done < build/monorepo/changed-projects.txt
+```
+
+The output file always exists after `writeChangedProjectsFromRef` runs — it is empty when nothing has changed, so no special handling is needed for the no-changes case.
+
+### CI/CD Integration (Gradle-native)
+
+Use in CI to only test changed modules directly from Gradle:
 
 ```kotlin
 tasks.register("ciTest") {
@@ -322,8 +420,9 @@ This ensures that:
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `baseBranch` | String | `"main"` | The git branch to compare against |
-| `includeUntracked` | Boolean | `true` | Whether to include untracked files in detection |
+| `baseBranch` | String | `"main"` | The git branch to compare against (branch-mode tasks) |
+| `commitRef` | String? | `null` | Commit SHA or tag to compare against HEAD (ref-mode tasks). Can also be supplied at runtime via `-PmonorepoBuild.commitRef=<sha>`, which takes precedence over the DSL value |
+| `includeUntracked` | Boolean | `true` | Whether to include untracked files in detection (branch-mode only) |
 | `excludePatterns` | List<String> | `[]` | Regex patterns for files to exclude globally |
 
 ### Per-project excludes
