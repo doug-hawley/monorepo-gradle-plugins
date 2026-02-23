@@ -368,15 +368,10 @@ class MonorepoPluginFunctionalTest : FunSpec({
         project.commitAll("Change app1")
 
         // Execute
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         // Assert
-        if (result.task(":printChangedProjects") == null) {
-            println("=== DIAGNOSTIC [test 17]: task was null ===")
-            println("Tasks executed: ${result.tasks.map { "${it.path}=${it.outcome}" }}")
-            println("Build output:\n${result.output}")
-        }
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
         val directlyChanged = result.extractDirectlyChangedProjects()
         directlyChanged shouldContain Projects.APP1
         directlyChanged shouldNotContain ":apps"
@@ -391,15 +386,10 @@ class MonorepoPluginFunctionalTest : FunSpec({
         project.commitAll("Change module1")
 
         // Execute
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         // Assert: real projects appear, hierarchy nodes do not
-        if (result.task(":printChangedProjects") == null) {
-            println("=== DIAGNOSTIC [test 18]: task was null ===")
-            println("Tasks executed: ${result.tasks.map { "${it.path}=${it.outcome}" }}")
-            println("Build output:\n${result.output}")
-        }
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
         val changed = result.extractChangedProjects()
         changed shouldContain Projects.MODULE1
         changed shouldContain Projects.APP1
@@ -416,15 +406,10 @@ class MonorepoPluginFunctionalTest : FunSpec({
         project.commitAll("Change app2 and module2")
 
         // Execute
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         // Assert
-        if (result.task(":printChangedProjects") == null) {
-            println("=== DIAGNOSTIC [test 19]: task was null ===")
-            println("Tasks executed: ${result.tasks.map { "${it.path}=${it.outcome}" }}")
-            println("Build output:\n${result.output}")
-        }
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
         val directlyChanged = result.extractDirectlyChangedProjects()
         directlyChanged shouldContain Projects.APP2
         directlyChanged shouldContain Projects.MODULE2
@@ -443,15 +428,10 @@ class MonorepoPluginFunctionalTest : FunSpec({
         )
 
         // Execute
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         // Assert: :modules:module2 detected via untracked file, :modules is not
-        if (result.task(":printChangedProjects") == null) {
-            println("=== DIAGNOSTIC [test 20]: task was null ===")
-            println("Tasks executed: ${result.tasks.map { "${it.path}=${it.outcome}" }}")
-            println("Build output:\n${result.output}")
-        }
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
         val directlyChanged = result.extractDirectlyChangedProjects()
         directlyChanged shouldContain Projects.MODULE2
         directlyChanged shouldNotContain ":modules"
@@ -476,15 +456,10 @@ class MonorepoPluginFunctionalTest : FunSpec({
         project.commitAll("Change billing impl")
 
         // Execute
-        val result = project.runTask("printChangedProjects")
+        val result = project.runTask("printChangedProjectsFromBranch")
 
         // Assert: only the concrete project appears, not :services or :services:billing
-        if (result.task(":printChangedProjects") == null) {
-            println("=== DIAGNOSTIC [test 21]: task was null ===")
-            println("Tasks executed: ${result.tasks.map { "${it.path}=${it.outcome}" }}")
-            println("Build output:\n${result.output}")
-        }
-        result.task(":printChangedProjects")?.outcome shouldBe TaskOutcome.SUCCESS
+        result.task(":printChangedProjectsFromBranch")?.outcome shouldBe TaskOutcome.SUCCESS
         val directlyChanged = result.extractDirectlyChangedProjects()
         directlyChanged shouldContain ":services:billing:impl"
         directlyChanged shouldNotContain ":services"
