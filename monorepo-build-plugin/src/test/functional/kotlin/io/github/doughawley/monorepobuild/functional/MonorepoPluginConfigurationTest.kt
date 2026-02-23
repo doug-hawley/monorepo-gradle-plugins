@@ -4,6 +4,7 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import org.gradle.testkit.runner.TaskOutcome
 
 /**
@@ -56,5 +57,17 @@ class MonorepoPluginConfigurationTest : FunSpec({
         val changedProjects = result.extractChangedProjects()
         changedProjects shouldNotContain ":api"
         changedProjects shouldContain ":core"
+    }
+
+    test("plugin fails with helpful error when configuration cache is requested") {
+        // given: a standard project with the plugin applied
+        val project = testProjectListener.createStandardProject()
+
+        // when: a task is run with --configuration-cache enabled
+        val result = project.runTaskAndFail("printChangedProjectsFromBranch", "--configuration-cache")
+
+        // then: the build fails with a clear incompatibility message pointing to the fix
+        result.output shouldContain "monorepo-build-plugin is incompatible with the Gradle configuration cache"
+        result.output shouldContain "org.gradle.configuration-cache=false"
     }
 })
