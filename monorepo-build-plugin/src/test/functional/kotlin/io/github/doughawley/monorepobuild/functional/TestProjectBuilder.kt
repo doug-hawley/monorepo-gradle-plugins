@@ -253,6 +253,9 @@ class TestProject(
     private fun gradleRunner(): GradleRunner {
         val env = HashMap(System.getenv())
         env["GRADLE_USER_HOME"] = gradleUserHome.absolutePath
+        // Strip env vars that trigger Develocity auto-injection via gradle/actions/setup-gradle.
+        // The injected init script interferes with projectsEvaluated task registration in CI.
+        env.keys.removeIf { it.startsWith("DEVELOCITY_") || it.startsWith("GRADLE_BUILD_ACTION_") }
         return GradleRunner.create()
             .withProjectDir(projectDir)
             .withEnvironment(env)
