@@ -18,7 +18,7 @@ class MonorepoBuildPlugin @Inject constructor(
     private enum class DetectionMode { FROM_BRANCH, FROM_REF }
 
     private companion object {
-        val REF_TASKS = setOf("printChangedProjectsFromRef", "buildChangedProjectsFromRef")
+        val REF_TASKS = setOf("printChangedProjectsFromRef", "buildChangedProjectsFromRef", "writeChangedProjectsFromRef")
         val BRANCH_TASKS = setOf("printChangedProjectsFromBranch", "buildChangedProjectsFromBranch")
     }
 
@@ -67,7 +67,7 @@ class MonorepoBuildPlugin @Inject constructor(
                     if (mode == DetectionMode.FROM_REF) {
                         val commitRef = resolveCommitRef(project.rootProject, rootExtension)
                             ?: throw GradleException(
-                                "printChangedProjectsFromRef / buildChangedProjectsFromRef requires " +
+                                "printChangedProjectsFromRef / buildChangedProjectsFromRef / writeChangedProjectsFromRef requires " +
                                 "a commitRef. Set it in the monorepoBuild DSL or pass " +
                                 "-PmonorepoBuild.commitRef=<sha>."
                             )
@@ -157,6 +157,20 @@ class MonorepoBuildPlugin @Inject constructor(
                 } else {
                     project.logger.lifecycle("Building changed projects (since $ref): ${changedProjects.joinToString(", ")}")
                 }
+            }
+        }
+
+        // Register the writeChangedProjectsFromRef task.
+        // Output file defaults to build/monorepo/changed-projects.txt but can be overridden
+        // via -PmonorepoBuild.outputFile=<path> at runtime or by configuring the task directly.
+        project.tasks.register("writeChangedProjectsFromRef", WriteChangedProjectsFromRefTask::class.java).configure {
+            group = "verification"
+            description = "Writes changed projects since a specific commit ref to a file for CI/CD pipeline consumption"
+            val customPath = project.findProperty("monorepoBuild.outputFile") as? String
+            if (customPath != null) {
+                outputFile.set(project.layout.projectDirectory.file(customPath))
+            } else {
+                outputFile.convention(project.layout.buildDirectory.file("monorepo/changed-projects.txt"))
             }
         }
 
