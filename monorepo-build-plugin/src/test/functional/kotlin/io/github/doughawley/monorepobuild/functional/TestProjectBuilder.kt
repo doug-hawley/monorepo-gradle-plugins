@@ -238,18 +238,16 @@ class TestProject(
     fun runTask(vararg tasks: String): BuildResult {
         return GradleRunner.create()
             .withProjectDir(projectDir)
-            .withArguments(tasks.toList() + listOf("--stacktrace", "--no-configuration-cache", "--no-daemon"))
+            .withArguments(tasks.toList() + "--stacktrace")
             .withPluginClasspath()
-            .forwardOutput()
             .build()
     }
 
     fun runTaskAndFail(vararg tasks: String): BuildResult {
         return GradleRunner.create()
             .withProjectDir(projectDir)
-            .withArguments(tasks.toList() + listOf("--stacktrace", "--no-configuration-cache", "--no-daemon"))
+            .withArguments(tasks.toList() + "--stacktrace")
             .withPluginClasspath()
-            .forwardOutput()
             .buildAndFail()
     }
 
