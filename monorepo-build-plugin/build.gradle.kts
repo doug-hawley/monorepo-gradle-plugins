@@ -77,9 +77,6 @@ val functionalTest by tasks.registering(Test::class) {
     useJUnitPlatform()
     outputs.upToDateWhen { false }
     shouldRunAfter(unitTest)
-    testLogging {
-        showStandardStreams = true
-    }
 }
 
 // Make check depend on both test types
