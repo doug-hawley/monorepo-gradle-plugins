@@ -250,6 +250,28 @@ class TestProject(
             .buildAndFail()
     }
 
+    fun runTaskWithProperties(vararg tasks: String, properties: Map<String, String> = emptyMap()): BuildResult {
+        val args = tasks.toMutableList()
+        properties.forEach { (k, v) -> args.add("-P$k=$v") }
+        args.add("--stacktrace")
+        return gradleRunner().withArguments(args).build()
+    }
+
+    fun runTaskWithPropertiesAndFail(vararg tasks: String, properties: Map<String, String> = emptyMap()): BuildResult {
+        val args = tasks.toMutableList()
+        properties.forEach { (k, v) -> args.add("-P$k=$v") }
+        args.add("--stacktrace")
+        return gradleRunner().withArguments(args).buildAndFail()
+    }
+
+    fun getLastCommitSha(): String {
+        val process = ProcessBuilder("git", "rev-parse", "HEAD")
+            .directory(projectDir)
+            .redirectOutput(ProcessBuilder.Redirect.PIPE)
+            .start()
+        return process.inputStream.bufferedReader().readText().trim()
+    }
+
     private fun gradleRunner(): GradleRunner {
         val env = HashMap(System.getenv())
         env["GRADLE_USER_HOME"] = gradleUserHome.absolutePath
@@ -300,6 +322,22 @@ fun BuildResult.extractDirectlyChangedProjects(): Set<String> {
 
 fun BuildResult.extractBuiltProjects(): Set<String> {
     val regex = """Building changed projects: (.*)""".toRegex()
+    val match = regex.find(output)
+    val projectsString = match?.groupValues?.get(1)?.trim() ?: ""
+
+    return if (projectsString.isEmpty()) {
+        emptySet()
+    } else {
+        projectsString
+            .split(", ")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .toSet()
+    }
+}
+
+fun BuildResult.extractBuiltProjectsFromRef(): Set<String> {
+    val regex = """Building changed projects \(since [^)]+\): (.*)""".toRegex()
     val match = regex.find(output)
     val projectsString = match?.groupValues?.get(1)?.trim() ?: ""
 

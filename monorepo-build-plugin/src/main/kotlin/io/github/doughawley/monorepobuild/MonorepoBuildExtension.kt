@@ -19,6 +19,13 @@ open class MonorepoBuildExtension {
     var baseBranch: String = "main"
 
     /**
+     * An explicit commit ref (SHA, tag, or branch name) to compare against HEAD
+     * when using ref-mode tasks (printChangedProjectsFromRef, buildChangedProjectsFromRef).
+     * Can also be supplied at runtime via -PmonorepoBuild.commitRef=<sha>.
+     */
+    var commitRef: String? = null
+
+    /**
      * Whether to include untracked files in the change detection
      */
     var includeUntracked: Boolean = true

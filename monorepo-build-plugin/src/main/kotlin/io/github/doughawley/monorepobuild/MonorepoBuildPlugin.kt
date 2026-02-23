@@ -1,6 +1,7 @@
 package io.github.doughawley.monorepobuild
 
 import io.github.doughawley.monorepobuild.git.GitCommandExecutor
+import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.logging.Logger
@@ -9,6 +10,13 @@ import org.gradle.api.logging.Logger
  * Gradle plugin that detects which projects have changed based on git history.
  */
 class MonorepoBuildPlugin : Plugin<Project> {
+
+    private enum class DetectionMode { FROM_BRANCH, FROM_REF }
+
+    private companion object {
+        val REF_TASKS = setOf("printChangedProjectsFromRef", "buildChangedProjectsFromRef")
+        val BRANCH_TASKS = setOf("printChangedProjectsFromBranch", "buildChangedProjectsFromBranch")
+    }
 
     override fun apply(project: Project) {
         // Register the extension on the root project to ensure it's shared
@@ -43,32 +51,29 @@ class MonorepoBuildPlugin : Plugin<Project> {
         project.gradle.projectsEvaluated {
             if (rootExtension.computationGuard.compareAndSet(false, true)) {
                 try {
-                    computeMetadata(project.rootProject, rootExtension)
+                    val mode = resolveMode(project.rootProject)
+                    if (mode == DetectionMode.FROM_REF) {
+                        val commitRef = resolveCommitRef(project.rootProject, rootExtension)
+                            ?: throw GradleException(
+                                "printChangedProjectsFromRef / buildChangedProjectsFromRef requires " +
+                                "a commitRef. Set it in the monorepoBuild DSL or pass " +
+                                "-PmonorepoBuild.commitRef=<sha>."
+                            )
+                        rootExtension.commitRef = commitRef
+                        computeMetadata(project.rootProject, rootExtension, commitRef)
+                        wireDependsOn(project, "buildChangedProjectsFromRef", rootExtension.allAffectedProjects)
+                    } else {
+                        computeMetadata(project.rootProject, rootExtension, commitRef = null)
+                        wireDependsOn(project, "buildChangedProjectsFromBranch", rootExtension.allAffectedProjects)
+                    }
                     rootExtension.metadataComputed = true
                     project.logger.debug("Changed project metadata computed successfully in configuration phase")
-
-                    // Wire up dependsOn for each affected project's build task now that we know
-                    // which projects changed. This must happen in the configuration phase so
-                    // Gradle can include them in the task graph before execution begins.
-                    val buildChangedTask = project.tasks.named("buildChangedProjectsFromBranch")
-                    rootExtension.allAffectedProjects.forEach { projectPath ->
-                        val targetProject = project.rootProject.findProject(projectPath)
-                        if (targetProject != null) {
-                            val buildTask = targetProject.tasks.findByName("build")
-                            if (buildTask != null) {
-                                buildChangedTask.configure {
-                                    dependsOn(buildTask)
-                                }
-                            } else {
-                                project.logger.warn("No build task found for $projectPath")
-                            }
-                        } else {
-                            project.logger.warn("Project not found: $projectPath")
-                        }
-                    }
+                } catch (e: GradleException) {
+                    throw e
                 } catch (e: Exception) {
-                    // Fail-fast: metadata computation is critical
-                    throw IllegalStateException(
+                    // Fail-fast: metadata computation is critical; wrap as GradleException so
+                    // Gradle surfaces it cleanly rather than swallowing it during configuration.
+                    throw GradleException(
                         "Failed to compute changed project metadata in configuration phase: ${e.message}",
                         e
                     )
@@ -109,21 +114,110 @@ class MonorepoBuildPlugin : Plugin<Project> {
             }
         }
 
+        // Register the printChangedProjectsFromRef task
+        project.tasks.register("printChangedProjectsFromRef", PrintChangedProjectsFromRefTask::class.java).configure {
+            group = "verification"
+            description = "Detects which projects changed since a specific commit ref"
+        }
+
+        // Register the buildChangedProjectsFromRef task.
+        // Actual dependsOn wiring for affected project build tasks is added dynamically
+        // in the projectsEvaluated hook above, after changed projects are known.
+        project.tasks.register("buildChangedProjectsFromRef").configure {
+            group = "build"
+            description = "Builds only the projects affected by changes since a specific commit ref"
+            doLast {
+                val extension = project.rootProject.extensions.getByType(MonorepoBuildExtension::class.java)
+
+                if (!extension.metadataComputed) {
+                    throw IllegalStateException(
+                        "Changed project metadata was not computed in the configuration phase. " +
+                        "Possible causes: the plugin was not applied to the root project, " +
+                        "or an error occurred during project evaluation. " +
+                        "Re-run with --info or --debug for more details."
+                    )
+                }
+
+                val changedProjects = extension.allAffectedProjects
+                val ref = extension.commitRef ?: "(unknown ref)"
+                if (changedProjects.isEmpty()) {
+                    project.logger.lifecycle("No projects have changed - nothing to build")
+                } else {
+                    project.logger.lifecycle("Building changed projects (since $ref): ${changedProjects.joinToString(", ")}")
+                }
+            }
+        }
+
         project.logger.info("Monorepo Build Plugin applied to ${project.name}")
     }
 
     /**
+     * Determines which detection mode to use based on the tasks requested in this invocation.
+     * Fails fast if both branch-mode and ref-mode tasks appear in the same invocation.
+     */
+    private fun resolveMode(project: Project): DetectionMode {
+        val requested = project.gradle.startParameter.taskNames
+            .map { it.substringAfterLast(":") }
+            .toSet()
+        val wantsRef = requested.any { it in REF_TASKS }
+        val wantsBranch = requested.any { it in BRANCH_TASKS }
+        if (wantsRef && wantsBranch) {
+            throw GradleException(
+                "Cannot run branch-mode and ref-mode tasks in the same invocation. " +
+                "Run printChangedProjectsFromBranch/buildChangedProjectsFromBranch OR " +
+                "printChangedProjectsFromRef/buildChangedProjectsFromRef — not both."
+            )
+        }
+        return if (wantsRef) DetectionMode.FROM_REF else DetectionMode.FROM_BRANCH
+    }
+
+    /**
+     * Resolves the commit ref to use, preferring the project property over the DSL value.
+     */
+    private fun resolveCommitRef(project: Project, extension: MonorepoBuildExtension): String? {
+        val fromProperty = project.findProperty("monorepoBuild.commitRef") as? String
+        return (fromProperty ?: extension.commitRef)?.takeIf { it.isNotBlank() }
+    }
+
+    /**
+     * Wires dependsOn from a build-aggregation task to the build tasks of all affected projects.
+     */
+    private fun wireDependsOn(project: Project, taskName: String, affectedProjects: Set<String>) {
+        val buildChangedTask = project.tasks.named(taskName)
+        affectedProjects.forEach { projectPath ->
+            val targetProject = project.rootProject.findProject(projectPath)
+            if (targetProject != null) {
+                val buildTask = targetProject.tasks.findByName("build")
+                if (buildTask != null) {
+                    buildChangedTask.configure {
+                        dependsOn(buildTask)
+                    }
+                } else {
+                    project.logger.warn("No build task found for $projectPath")
+                }
+            } else {
+                project.logger.warn("Project not found: $projectPath")
+            }
+        }
+    }
+
+    /**
      * Computes changed project metadata.
-     * Called during task execution to ensure all dependencies are fully resolved.
+     * Called during the configuration phase to ensure all dependencies are fully resolved.
      *
      * @param project The Gradle project
      * @param extension The plugin extension
+     * @param commitRef When non-null, uses two-dot diff against this ref instead of branch comparison
      */
-    internal fun computeMetadata(project: Project, extension: MonorepoBuildExtension) {
+    internal fun computeMetadata(project: Project, extension: MonorepoBuildExtension, commitRef: String? = null) {
         val logger = project.logger
 
         logger.info("Computing changed project metadata...")
-        logger.info("Base branch: ${extension.baseBranch}")
+        if (commitRef != null) {
+            logger.info("Commit ref: $commitRef")
+        } else {
+            logger.info("Base branch: ${extension.baseBranch}")
+        }
         logger.info("Include untracked: ${extension.includeUntracked}")
 
         // Initialize detectors and factories, sharing a single GitCommandExecutor instance
@@ -133,7 +227,11 @@ class MonorepoBuildPlugin : Plugin<Project> {
         val metadataFactory = ProjectMetadataFactory(logger)
 
         // Detect changed files from git
-        val changedFiles = gitDetector.getChangedFiles(project.rootDir, extension)
+        val changedFiles = if (commitRef != null) {
+            gitDetector.getChangedFilesFromRef(project.rootDir, commitRef, extension.excludePatterns)
+        } else {
+            gitDetector.getChangedFiles(project.rootDir, extension)
+        }
         val changedFilesMap = projectMapper.mapChangedFilesToProjects(project.rootProject, changedFiles)
 
         // Apply per-project exclude patterns (configured via projectExcludes { } in each subproject)

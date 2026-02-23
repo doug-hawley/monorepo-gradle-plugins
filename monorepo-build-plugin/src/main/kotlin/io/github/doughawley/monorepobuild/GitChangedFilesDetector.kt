@@ -70,6 +70,34 @@ class GitChangedFilesDetector(
         }.toSet()
     }
 
+    /**
+     * Gets the list of changed files between a specific commit ref and HEAD using a two-dot diff.
+     * Skips working-tree changes, staged files, and untracked files — intended for CI automation
+     * where the workspace is clean.
+     *
+     * @param rootDir The root directory of the project
+     * @param commitRef A git commit SHA, tag, or ref to diff against HEAD
+     * @param excludePatterns Regex patterns for files to exclude from results
+     * @return Set of changed file paths relative to the git root
+     * @throws IllegalArgumentException if the commitRef does not exist in the repository
+     */
+    fun getChangedFilesFromRef(rootDir: File, commitRef: String, excludePatterns: List<String>): Set<String> {
+        val gitDir = findGitRoot(rootDir) ?: run {
+            logger.warn("Not a git repository")
+            return emptySet()
+        }
+        val diffResult = gitExecutor.execute(gitDir, "diff", "--name-only", commitRef, "HEAD")
+        if (!diffResult.success) {
+            throw IllegalArgumentException(
+                "Commit ref '$commitRef' does not exist in this repository. " +
+                "Check the value passed to commitRef / -PmonorepoBuild.commitRef."
+            )
+        }
+        val changedFiles = diffResult.output.toSet()
+        val compiled = excludePatterns.map { Regex(it) }
+        return changedFiles.filterNot { file -> compiled.any { it.matches(file) } }.toSet()
+    }
+
     private fun getChangedFilesSinceBaseBranch(gitDir: File, baseBranch: String): Set<String> {
         // Resolve the best available ref before attempting the diff so we can give a
         // clear diagnostic if neither a remote nor a local branch can be found.
