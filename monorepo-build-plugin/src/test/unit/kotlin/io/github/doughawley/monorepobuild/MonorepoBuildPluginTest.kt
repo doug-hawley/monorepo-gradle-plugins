@@ -75,7 +75,7 @@ class MonorepoBuildPluginTest : FunSpec({
 
         // then
         task shouldNotBe null
-        task!!.group shouldBe "verification"
+        task!!.group shouldBe "monorepo"
         task.description shouldBe "Detects which projects have changed based on git history"
     }
 

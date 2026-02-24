@@ -17,7 +17,7 @@ class BuildChangedProjectsTaskTest : FunSpec({
         // then
         val task = project.tasks.findByName("buildChangedProjectsFromBranch")
         task shouldNotBe null
-        task?.group shouldBe "build"
+        task?.group shouldBe "monorepo"
         task?.description shouldBe "Builds only the projects that have been affected by changes"
     }
 })

@@ -20,6 +20,7 @@ class MonorepoBuildPlugin @Inject constructor(
     private companion object {
         val REF_TASKS = setOf("printChangedProjectsFromRef", "buildChangedProjectsFromRef", "writeChangedProjectsFromRef")
         val BRANCH_TASKS = setOf("printChangedProjectsFromBranch", "buildChangedProjectsFromBranch")
+        const val TASK_GROUP = "monorepo"
     }
 
     override fun apply(project: Project) {
@@ -95,7 +96,7 @@ class MonorepoBuildPlugin @Inject constructor(
 
         // Register the printChangedProjectsFromBranch task
         project.tasks.register("printChangedProjectsFromBranch", PrintChangedProjectsTask::class.java).configure {
-            group = "verification"
+            group = TASK_GROUP
             description = "Detects which projects have changed based on git history"
         }
 
@@ -103,7 +104,7 @@ class MonorepoBuildPlugin @Inject constructor(
         // Actual dependsOn wiring for affected project build tasks is added dynamically
         // in the projectsEvaluated hook above, after changed projects are known.
         project.tasks.register("buildChangedProjectsFromBranch").configure {
-            group = "build"
+            group = TASK_GROUP
             description = "Builds only the projects that have been affected by changes"
             doLast {
                 val extension = project.rootProject.extensions.getByType(MonorepoBuildExtension::class.java)
@@ -128,7 +129,7 @@ class MonorepoBuildPlugin @Inject constructor(
 
         // Register the printChangedProjectsFromRef task
         project.tasks.register("printChangedProjectsFromRef", PrintChangedProjectsFromRefTask::class.java).configure {
-            group = "verification"
+            group = TASK_GROUP
             description = "Detects which projects changed since a specific commit ref"
         }
 
@@ -136,7 +137,7 @@ class MonorepoBuildPlugin @Inject constructor(
         // Actual dependsOn wiring for affected project build tasks is added dynamically
         // in the projectsEvaluated hook above, after changed projects are known.
         project.tasks.register("buildChangedProjectsFromRef").configure {
-            group = "build"
+            group = TASK_GROUP
             description = "Builds only the projects affected by changes since a specific commit ref"
             doLast {
                 val extension = project.rootProject.extensions.getByType(MonorepoBuildExtension::class.java)
@@ -164,7 +165,7 @@ class MonorepoBuildPlugin @Inject constructor(
         // Output file defaults to build/monorepo/changed-projects.txt but can be overridden
         // via -PmonorepoBuild.outputFile=<path> at runtime or by configuring the task directly.
         project.tasks.register("writeChangedProjectsFromRef", WriteChangedProjectsFromRefTask::class.java).configure {
-            group = "verification"
+            group = TASK_GROUP
             description = "Writes changed projects since a specific commit ref to a file for CI/CD pipeline consumption"
             val customPath = project.findProperty("monorepoBuild.outputFile") as? String
             if (customPath != null) {
