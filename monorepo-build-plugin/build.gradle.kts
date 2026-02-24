@@ -51,6 +51,7 @@ dependencies {
     add("unitTestImplementation", "io.kotest:kotest-runner-junit5:5.9.1")
     add("unitTestImplementation", "io.kotest:kotest-assertions-core:5.9.1")
     add("unitTestImplementation", "io.kotest:kotest-property:5.9.1")
+    add("unitTestImplementation", "io.mockk:mockk:1.13.12")
 
     // Functional test dependencies
     add("functionalTestImplementation", gradleTestKit())

@@ -1,69 +1,60 @@
 package io.github.doughawley.monorepobuild
 
-import io.github.doughawley.monorepobuild.git.GitCommandExecutor
 import org.gradle.api.logging.Logger
-import java.io.File
 
 /**
- * Responsible for detecting changed files from git.
- * Detects committed changes, staged changes, and optionally untracked files.
+ * Combines and filters the git change signals produced by GitRepository into a single set of
+ * changed file paths. Responsible for merging branch diff, working-tree, staged, and untracked
+ * sources and for applying global exclude patterns.
  */
 class GitChangedFilesDetector(
     private val logger: Logger,
-    private val gitExecutor: GitCommandExecutor = GitCommandExecutor(logger)
+    private val gitRepository: GitRepository,
+    private val baseBranchResolver: BaseBranchResolver = BaseBranchResolver(logger, gitRepository)
 ) {
 
     /**
-     * Gets the list of changed files from git based on the configuration.
+     * Gets the set of changed files based on the plugin configuration.
      * Includes:
-     * - Files changed between base branch and HEAD (committed)
-     * - Files staged in the git index (staged but not committed)
-     * - Untracked files (if includeUntracked is true)
+     * - Files changed between the resolved base branch and HEAD (committed)
+     * - Files modified in the working tree (unstaged)
+     * - Files staged in the git index
+     * - Untracked files (when includeUntracked is true)
      *
-     * @param rootDir The root directory of the project
      * @param extension The plugin configuration
-     * @return Set of changed file paths relative to root
+     * @return Set of changed file paths relative to the repository root
      */
-    fun getChangedFiles(rootDir: File, extension: MonorepoBuildExtension): Set<String> {
-        val gitDir = findGitRoot(rootDir) ?: run {
+    fun getChangedFiles(extension: MonorepoBuildExtension): Set<String> {
+        if (!gitRepository.isRepository()) {
             logger.warn("Not a git repository")
             return emptySet()
         }
 
         val changedFiles = mutableSetOf<String>()
 
-        try {
-            // Get changed files compared to base branch (committed changes)
-            val branchChanges = getChangedFilesSinceBaseBranch(gitDir, extension.baseBranch)
-            logger.info("Files from branch comparison: ${branchChanges.size}")
-            changedFiles.addAll(branchChanges)
+        val branchChanges = getChangedFilesSinceBaseBranch(extension.baseBranch)
+        logger.info("Files from branch comparison: ${branchChanges.size}")
+        changedFiles.addAll(branchChanges)
 
-            // Also get uncommitted working tree changes (modified files not yet committed)
-            val workingTreeChanges = getWorkingTreeChanges(gitDir)
-            logger.info("Working tree changes: ${workingTreeChanges.size}")
-            changedFiles.addAll(workingTreeChanges)
+        val workingTreeChanges = gitRepository.workingTreeChanges()
+        logger.info("Working tree changes: ${workingTreeChanges.size}")
+        changedFiles.addAll(workingTreeChanges)
 
-            // Get staged files (files added with git add but not yet committed)
-            val staged = getStagedFiles(gitDir)
-            logger.info("Staged files: ${staged.size}")
-            changedFiles.addAll(staged)
+        val staged = gitRepository.stagedFiles()
+        logger.info("Staged files: ${staged.size}")
+        changedFiles.addAll(staged)
 
-            // Include untracked files if configured
-            if (extension.includeUntracked) {
-                val untracked = getUntrackedFiles(gitDir)
-                logger.info("Untracked files: ${untracked.size}")
-                changedFiles.addAll(untracked)
-            }
-
-            logger.info("Total changed files detected: ${changedFiles.size}")
-            if (changedFiles.isNotEmpty()) {
-                logger.info("Changed files: ${changedFiles.take(5).joinToString(", ")}${if (changedFiles.size > 5) "..." else ""}")
-            }
-        } catch (e: Exception) {
-            logger.error("Error executing git command: ${e.message}", e)
+        if (extension.includeUntracked) {
+            val untracked = gitRepository.untrackedFiles()
+            logger.info("Untracked files: ${untracked.size}")
+            changedFiles.addAll(untracked)
         }
 
-        // Pre-compile exclude patterns once rather than recompiling for every file
+        logger.info("Total changed files detected: ${changedFiles.size}")
+        if (changedFiles.isNotEmpty()) {
+            logger.info("Changed files: ${changedFiles.take(5).joinToString(", ")}${if (changedFiles.size > 5) "..." else ""}")
+        }
+
         val compiledExcludePatterns = extension.excludePatterns.map { Regex(it) }
         return changedFiles.filterNot { file ->
             compiledExcludePatterns.any { pattern -> file.matches(pattern) }
@@ -71,37 +62,27 @@ class GitChangedFilesDetector(
     }
 
     /**
-     * Gets the list of changed files between a specific commit ref and HEAD using a two-dot diff.
-     * Skips working-tree changes, staged files, and untracked files — intended for CI automation
+     * Gets the set of changed files between a specific commit ref and HEAD using a two-dot diff.
+     * Skips working-tree, staged, and untracked files — intended for CI automation
      * where the workspace is clean.
      *
-     * @param rootDir The root directory of the project
      * @param commitRef A git commit SHA, tag, or ref to diff against HEAD
      * @param excludePatterns Regex patterns for files to exclude from results
-     * @return Set of changed file paths relative to the git root
+     * @return Set of changed file paths relative to the repository root
      * @throws IllegalArgumentException if the commitRef does not exist in the repository
      */
-    fun getChangedFilesFromRef(rootDir: File, commitRef: String, excludePatterns: List<String>): Set<String> {
-        val gitDir = findGitRoot(rootDir) ?: run {
+    fun getChangedFilesFromRef(commitRef: String, excludePatterns: List<String>): Set<String> {
+        if (!gitRepository.isRepository()) {
             logger.warn("Not a git repository")
             return emptySet()
         }
-        val diffResult = gitExecutor.execute(gitDir, "diff", "--name-only", commitRef, "HEAD")
-        if (!diffResult.success) {
-            throw IllegalArgumentException(
-                "Commit ref '$commitRef' does not exist in this repository. " +
-                "Check the value passed to commitRef / -PmonorepoBuild.commitRef."
-            )
-        }
-        val changedFiles = diffResult.output.toSet()
+        val changedFiles = gitRepository.diffFromRef(commitRef)
         val compiled = excludePatterns.map { Regex(it) }
         return changedFiles.filterNot { file -> compiled.any { it.matches(file) } }.toSet()
     }
 
-    private fun getChangedFilesSinceBaseBranch(gitDir: File, baseBranch: String): Set<String> {
-        // Resolve the best available ref before attempting the diff so we can give a
-        // clear diagnostic if neither a remote nor a local branch can be found.
-        val resolvedRef = resolveBaseBranchRef(gitDir, baseBranch)
+    private fun getChangedFilesSinceBaseBranch(baseBranch: String): Set<String> {
+        val resolvedRef = baseBranchResolver.resolve(baseBranch)
         if (resolvedRef == null) {
             logger.warn(
                 "Could not resolve base branch '$baseBranch' as a remote (origin/$baseBranch) " +
@@ -110,84 +91,6 @@ class GitChangedFilesDetector(
             )
             return emptySet()
         }
-
-        return try {
-            gitExecutor.executeForOutput(
-                gitDir,
-                "diff", "--name-only", "$resolvedRef...HEAD"
-            ).toSet()
-        } catch (e: Exception) {
-            logger.warn("Could not diff against '$resolvedRef': ${e.message}")
-            emptySet()
-        }
-    }
-
-    /**
-     * Resolves the base branch to a concrete git ref that exists in the repository.
-     * Preference order:
-     *  1. If the caller already supplied a remote ref (e.g. "origin/main"), use it directly.
-     *  2. Try the remote tracking ref "origin/<baseBranch>".
-     *  3. Fall back to the local branch <baseBranch>.
-     * Returns null if none of the candidates exist.
-     */
-    private fun resolveBaseBranchRef(gitDir: File, baseBranch: String): String? {
-        if (baseBranch.startsWith("origin/")) {
-            return if (refExists(gitDir, baseBranch)) baseBranch else null
-        }
-        val remoteRef = "origin/$baseBranch"
-        if (refExists(gitDir, remoteRef)) return remoteRef
-        if (refExists(gitDir, baseBranch)) return baseBranch
-        return null
-    }
-
-    private fun refExists(gitDir: File, ref: String): Boolean =
-        gitExecutor.execute(gitDir, "rev-parse", "--verify", ref).success
-
-    private fun getWorkingTreeChanges(gitDir: File): Set<String> {
-        // Get files modified in working tree but not yet staged or committed
-        return try {
-            gitExecutor.executeForOutput(
-                gitDir,
-                "diff", "--name-only", "HEAD"
-            ).toSet()
-        } catch (e: Exception) {
-            logger.warn("Could not get working tree changes: ${e.message}")
-            emptySet()
-        }
-    }
-
-    private fun getStagedFiles(gitDir: File): Set<String> {
-        return try {
-            gitExecutor.executeForOutput(
-                gitDir,
-                "diff", "--name-only", "--cached"
-            ).toSet()
-        } catch (e: Exception) {
-            logger.warn("Could not get staged files: ${e.message}")
-            emptySet()
-        }
-    }
-
-    private fun getUntrackedFiles(gitDir: File): Set<String> {
-        return try {
-            gitExecutor.executeForOutput(
-                gitDir,
-                "ls-files", "--others", "--exclude-standard"
-            ).toSet()
-        } catch (e: Exception) {
-            logger.warn("Could not get untracked files: ${e.message}")
-            emptySet()
-        }
-    }
-
-    private fun findGitRoot(startDir: File): File? {
-        var current: File? = startDir
-        while (current != null) {
-            if (File(current, ".git").exists()) {
-                return current
-            }
-            current = current.parentFile
-        }
-        return null
+        return gitRepository.diffBranch(resolvedRef).toSet()
     }
 }

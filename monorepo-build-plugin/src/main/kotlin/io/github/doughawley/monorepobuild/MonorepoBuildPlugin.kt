@@ -1,6 +1,5 @@
 package io.github.doughawley.monorepobuild
 
-import io.github.doughawley.monorepobuild.git.GitCommandExecutor
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -247,17 +246,17 @@ class MonorepoBuildPlugin @Inject constructor(
         }
         logger.info("Include untracked: ${extension.includeUntracked}")
 
-        // Initialize detectors and factories, sharing a single GitCommandExecutor instance
-        val gitExecutor = GitCommandExecutor(logger)
-        val gitDetector = GitChangedFilesDetector(logger, gitExecutor)
+        // Initialize detectors and factories
+        val gitRepository = GitRepository(project.rootDir, logger)
+        val gitDetector = GitChangedFilesDetector(logger, gitRepository)
         val projectMapper = ProjectFileMapper()
         val metadataFactory = ProjectMetadataFactory(logger)
 
         // Detect changed files from git
         val changedFiles = if (commitRef != null) {
-            gitDetector.getChangedFilesFromRef(project.rootDir, commitRef, extension.excludePatterns)
+            gitDetector.getChangedFilesFromRef(commitRef, extension.excludePatterns)
         } else {
-            gitDetector.getChangedFiles(project.rootDir, extension)
+            gitDetector.getChangedFiles(extension)
         }
         val changedFilesMap = projectMapper.mapChangedFilesToProjects(project.rootProject, changedFiles)
 
