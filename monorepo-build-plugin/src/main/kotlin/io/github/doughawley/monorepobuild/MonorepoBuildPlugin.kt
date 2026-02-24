@@ -158,7 +158,7 @@ class MonorepoBuildPlugin @Inject constructor(
                 }
 
                 val changedProjects = extension.allAffectedProjects
-                val ref = extension.commitRef ?: "(unknown ref)"
+                val ref = extension.commitRef
                 if (changedProjects.isEmpty()) {
                     project.logger.lifecycle("No projects have changed - nothing to build")
                 } else {
@@ -209,7 +209,7 @@ class MonorepoBuildPlugin @Inject constructor(
      */
     private fun resolveCommitRef(project: Project, extension: MonorepoBuildExtension): String? {
         val fromProperty = project.findProperty("monorepoBuild.commitRef") as? String
-        return (fromProperty ?: extension.commitRef)?.takeIf { it.isNotBlank() }
+        return (fromProperty ?: extension.commitRef).takeIf { it.isNotBlank() }
     }
 
     /**

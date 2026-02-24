@@ -22,18 +22,6 @@ This dramatically reduces build times in CI/CD pipelines by avoiding unnecessary
 - **Faster feedback loops** - Reduce PR build times by focusing on impacted code
 - **Resource optimization** - Save compute resources by avoiding redundant builds
 
-## Features
-
-- Detects changed files by comparing against a base branch or a specific commit ref
-- Identifies which Gradle projects are affected by the changes
-- Reports dependent projects that are impacted by changes in their dependencies
-- Configurable base branch comparison
-- Commit-ref mode for CI pipelines that track a last-known-good SHA
-- Machine-consumable output file for shell-script-based pipeline integration
-- Option to include untracked files
-- Exclude patterns support (ignore documentation, config files, etc.)
-- Works with multi-module projects and monorepos of any size
-
 ## Usage
 
 ### Apply the plugin
@@ -44,70 +32,81 @@ plugins {
 }
 ```
 
-> **Note:** This plugin uses a GitHub-based plugin ID (`io.github.doug-hawley`) which simplifies verification on the Gradle Plugin Portal without requiring domain ownership.
-
 ### Configure the plugin
 
 ```kotlin
 monorepoBuild {
-    baseBranch = "main"  // default
-    includeUntracked = true  // default
-    excludePatterns = listOf(".*\\.md", "docs/.*")
+    baseBranch = "main"           // branch to compare against for branch-mode tasks; defaults to "main"
+    commitRef = "HEAD~1"          // commit SHA, tag, or ref for ref-mode tasks; defaults to "HEAD~1"; can be overridden at runtime via -PmonorepoBuild.commitRef=<sha>
+    includeUntracked = true       // include files not yet tracked by git; defaults to true (branch-mode only)
+    excludePatterns = listOf(     // regex patterns for files to exclude globally across all projects
+        ".*\\.md",
+        "docs/.*"
+    )
 }
 ```
 
-### Run the detection task
+Individual subprojects can declare their own exclude patterns using the `projectExcludes` extension. Patterns are matched against paths relative to the subproject directory and are applied after global `excludePatterns`.
+
+```kotlin
+// In :api/build.gradle.kts
+projectExcludes {
+    excludePatterns = listOf(     // regex patterns relative to this subproject's directory
+        "generated/.*",
+        ".*\\.json"
+    )
+}
+```
+
+### Tasks
+
+The plugin provides two sets of tasks suited to different workflows:
+
+**Branch-mode tasks** compare against a base branch and are designed for developers working on a feature branch. Before opening a pull request, you can run `buildChangedProjectsFromBranch` to build only the projects you have changed, getting a fast confidence check without rebuilding the entire repository.
+
+**Ref-mode tasks** compare against a specific commit ref and are designed for CI/CD pipelines. When a pipeline wants to build only what changed since the last commit on main, or since a known-good previous commit, ref-mode tasks provide that targeted detection. By default they compare against `HEAD~1` (the previous commit), which works out of the box for pipelines that run on every commit. For pipelines that track a last-known-good SHA, pass that SHA via `-PmonorepoBuild.commitRef=<sha>` to override the default.
+
+#### `printChangedProjectsFromBranch`
+
+Prints a human-readable report of which projects have changed and which are transitively affected, comparing against `baseBranch`.
 
 ```bash
 ./gradlew printChangedProjectsFromBranch
 ```
 
-### Build only changed projects
+#### `buildChangedProjectsFromBranch`
 
-The plugin registers a `buildChangedProjectsFromBranch` task that automatically builds only the projects affected by changes:
+Builds all affected projects (including transitive dependents), comparing against `baseBranch`. Useful before opening a pull request to verify only your changed modules build correctly.
 
 ```bash
 ./gradlew buildChangedProjectsFromBranch
 ```
 
-This task will:
-1. Detect all changed projects (including those affected by dependency changes)
-2. Build each affected project automatically
-3. Report which projects were built
-
-### Comparing against a specific commit ref
-
-The tasks above compare against a branch (`baseBranch`). When your CI pipeline knows the last commit that was successfully built, you can compare against that exact SHA instead. This is more precise than branch comparison and avoids false positives when multiple commits have accumulated.
-
-The plugin provides three ref-mode tasks. All three require a commit ref, supplied either in the DSL or as a runtime property:
-
-```bash
-# Via runtime property (recommended for CI — no build script changes needed)
-./gradlew <task> -PmonorepoBuild.commitRef=<sha>
-
-# Via DSL (for a permanent per-project default)
-monorepoBuild {
-    commitRef = "abc123def"
-}
-```
-
-> **Note:** Ref-mode tasks use a two-dot diff (`git diff <ref> HEAD`), which only considers committed changes. Staged and untracked files are intentionally ignored — this mode is designed for clean CI workspaces.
-
 #### `printChangedProjectsFromRef`
 
-Prints changed projects in a human-readable format, useful for inspecting what a pipeline run would affect:
+Prints a human-readable report of which projects changed since a specific commit ref. Defaults to `HEAD~1`.
 
 ```bash
+# Use the default (HEAD~1)
+./gradlew printChangedProjectsFromRef
+
+# Override with a specific SHA
 ./gradlew printChangedProjectsFromRef -PmonorepoBuild.commitRef=abc123
 ```
 
 #### `buildChangedProjectsFromRef`
 
-Builds all affected projects (including transitive dependents) since the given ref:
+Builds all affected projects since a specific commit ref. Defaults to `HEAD~1`, so it works out of the box for pipelines that trigger on every commit. Override with a specific SHA when your pipeline tracks the last successful build.
 
 ```bash
-./gradlew buildChangedProjectsFromRef -PmonorepoBuild.commitRef=abc123
+# Build what changed since the previous commit (default)
+./gradlew buildChangedProjectsFromRef
+
+# Build what changed since a specific SHA (e.g., last successful CI build)
+./gradlew buildChangedProjectsFromRef -PmonorepoBuild.commitRef=abc123def456
 ```
+
+> **Note:** Ref-mode tasks use a two-dot diff (`git diff <ref> HEAD`), which only considers committed changes. Staged and untracked files are intentionally ignored — this mode is designed for clean CI workspaces.
 
 #### `writeChangedProjectsFromRef`
 
@@ -421,7 +420,7 @@ This ensures that:
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `baseBranch` | String | `"main"` | The git branch to compare against (branch-mode tasks) |
-| `commitRef` | String? | `null` | Commit SHA or tag to compare against HEAD (ref-mode tasks). Can also be supplied at runtime via `-PmonorepoBuild.commitRef=<sha>`, which takes precedence over the DSL value |
+| `commitRef` | String | `"HEAD~1"` | Commit SHA, tag, or ref expression to compare against HEAD (ref-mode tasks). Can also be supplied at runtime via `-PmonorepoBuild.commitRef=<sha>`, which takes precedence over the DSL value |
 | `includeUntracked` | Boolean | `true` | Whether to include untracked files in detection (branch-mode only) |
 | `excludePatterns` | List<String> | `[]` | Regex patterns for files to exclude globally |
 

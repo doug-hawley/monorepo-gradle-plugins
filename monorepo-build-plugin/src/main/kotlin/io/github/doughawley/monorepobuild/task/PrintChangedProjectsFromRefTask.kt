@@ -29,7 +29,7 @@ abstract class PrintChangedProjectsFromRefTask : DefaultTask() {
             )
         }
 
-        val resolvedRef = extension.commitRef ?: "(unknown ref)"
+        val resolvedRef = extension.commitRef
         val allAffected = extension.allAffectedProjects
 
         if (allAffected.isEmpty()) {
