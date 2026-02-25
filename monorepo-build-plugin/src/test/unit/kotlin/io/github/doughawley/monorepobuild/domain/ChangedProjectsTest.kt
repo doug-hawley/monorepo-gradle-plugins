@@ -9,23 +9,6 @@ import io.kotest.matchers.shouldNotBe
 
 class ChangedProjectsTest : FunSpec({
 
-    test("getChangedProjects returns names of projects with direct changes and dependents") {
-        // given
-        val commonLib = ProjectMetadata("common-lib", ":common-lib", changedFiles = listOf("file1.kt"))
-        val service = ProjectMetadata("service", ":service", dependencies = listOf(commonLib))
-        val app = ProjectMetadata("app", ":app", dependencies = listOf(service))
-
-        val projects = listOf(commonLib, service, app)
-        val changedProjects = ChangedProjects(projects)
-
-        // when
-        val result = changedProjects.getChangedProjects()
-
-        // then - should include common-lib (direct change), service (depends on common-lib), and app (depends on service)
-        result shouldHaveSize 3
-        result shouldContainAll listOf("common-lib", "service", "app")
-    }
-
     test("getChangedProjectPaths returns fully qualified paths of affected projects") {
         // given
         val lib = ProjectMetadata("lib", ":libs:lib", changedFiles = listOf("file1.kt"))
@@ -56,23 +39,6 @@ class ChangedProjectsTest : FunSpec({
 
         // then - should include lib (direct change) and service-a (depends on lib)
         count shouldBe 2
-    }
-
-    test("getAllProjects returns all project names") {
-        // given
-        val projects = listOf(
-            ProjectMetadata("project-a", ":project-a", changedFiles = listOf("file1.kt")),
-            ProjectMetadata("project-b", ":project-b", changedFiles = emptyList()),
-            ProjectMetadata("project-c", ":project-c", changedFiles = emptyList())
-        )
-        val changedProjects = ChangedProjects(projects)
-
-        // when
-        val result = changedProjects.getAllProjects()
-
-        // then
-        result shouldHaveSize 3
-        result shouldContainAll listOf("project-a", "project-b", "project-c")
     }
 
     test("getAllProjectPaths returns all fully qualified paths") {
@@ -327,8 +293,6 @@ class ChangedProjectsTest : FunSpec({
         val changedProjects = ChangedProjects(emptyList())
 
         // then
-        changedProjects.getChangedProjects().shouldBeEmpty()
-        changedProjects.getAllProjects().shouldBeEmpty()
         changedProjects.getChangedProjectCount() shouldBe 0
         changedProjects.getTotalChangedFilesCount() shouldBe 0
         changedProjects.hasAnyChanges() shouldBe false

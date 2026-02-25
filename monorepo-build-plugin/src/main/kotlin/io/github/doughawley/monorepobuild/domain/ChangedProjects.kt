@@ -8,16 +8,6 @@ data class ChangedProjects(
     val projects: List<ProjectMetadata>
 ) {
     /**
-     * Returns a list of project names that are affected by changes.
-     * This includes projects with direct changes AND projects whose dependencies have changed.
-     */
-    fun getChangedProjects(): List<String> {
-        return projects
-            .filter { it.hasChanges() }
-            .map { it.name }
-    }
-
-    /**
      * Returns a list of fully qualified project paths that are affected by changes.
      * This includes projects with direct changes AND projects whose dependencies have changed.
      */
@@ -32,13 +22,6 @@ data class ChangedProjects(
      */
     fun getChangedProjectCount(): Int {
         return projects.count { it.hasChanges() }
-    }
-
-    /**
-     * Returns all projects, including those without changes.
-     */
-    fun getAllProjects(): List<String> {
-        return projects.map { it.name }
     }
 
     /**
