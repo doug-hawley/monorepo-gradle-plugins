@@ -28,7 +28,7 @@ This dramatically reduces build times in CI/CD pipelines by avoiding unnecessary
 
 ```kotlin
 plugins {
-    id("io.github.doug-hawley.monorepo-build-plugin") version "1.1.0" // x-release-please-version
+    id("io.github.doug-hawley.monorepo-build-plugin") version "0.2.0" // x-release-please-version
 }
 ```
 
