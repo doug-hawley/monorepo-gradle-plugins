@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/doug-hawley/monorepo-gradle-plugins/compare/v0.3.0...v0.3.1) (2026-02-26)
+
+
+### Performance Improvements
+
+* parallelize functional tests and split MonorepoPluginFunctionalTest ([77cdd7f](https://github.com/doug-hawley/monorepo-gradle-plugins/commit/77cdd7fca8d56fd1a0d9364612c501cb9aa06cc1))
+* remove isolated GRADLE_USER_HOME to allow daemon reuse across functional tests ([f0b801e](https://github.com/doug-hawley/monorepo-gradle-plugins/commit/f0b801e7b595764b5ad3d36ef8ed74e1a3cfa02b))
+
 ## [0.3.0](https://github.com/doug-hawley/monorepo-gradle-plugins/compare/v0.2.0...v0.3.0) (2026-02-26)
 
 
