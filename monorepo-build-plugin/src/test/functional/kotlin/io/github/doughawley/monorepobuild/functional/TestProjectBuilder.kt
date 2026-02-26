@@ -240,27 +240,27 @@ class TestProject(
 
     fun runTask(vararg tasks: String): BuildResult {
         return gradleRunner()
-            .withArguments(tasks.toList() + "--stacktrace")
+            .withArguments(tasks.toList() + listOf("--parallel", "--stacktrace"))
             .build()
     }
 
     fun runTaskAndFail(vararg tasks: String): BuildResult {
         return gradleRunner()
-            .withArguments(tasks.toList() + "--stacktrace")
+            .withArguments(tasks.toList() + listOf("--parallel", "--stacktrace"))
             .buildAndFail()
     }
 
     fun runTaskWithProperties(vararg tasks: String, properties: Map<String, String> = emptyMap()): BuildResult {
         val args = tasks.toMutableList()
         properties.forEach { (k, v) -> args.add("-P$k=$v") }
-        args.add("--stacktrace")
+        args.addAll(listOf("--parallel", "--stacktrace"))
         return gradleRunner().withArguments(args).build()
     }
 
     fun runTaskWithPropertiesAndFail(vararg tasks: String, properties: Map<String, String> = emptyMap()): BuildResult {
         val args = tasks.toMutableList()
         properties.forEach { (k, v) -> args.add("-P$k=$v") }
-        args.add("--stacktrace")
+        args.addAll(listOf("--parallel", "--stacktrace"))
         return gradleRunner().withArguments(args).buildAndFail()
     }
 
