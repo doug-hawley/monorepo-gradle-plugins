@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/doug-hawley/monorepo-gradle-plugins/compare/v0.3.1...v0.3.2) (2026-02-27)
+
+
+### Features
+
+* remove file list from print task output ([009937c](https://github.com/doug-hawley/monorepo-gradle-plugins/commit/009937c7d8f648525c9171f2294a611c7b233da2))
+
 ## [0.3.1](https://github.com/doug-hawley/monorepo-gradle-plugins/compare/v0.3.0...v0.3.1) (2026-02-26)
 
 
