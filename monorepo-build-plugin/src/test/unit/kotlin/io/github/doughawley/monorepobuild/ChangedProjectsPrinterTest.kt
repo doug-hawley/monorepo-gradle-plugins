@@ -78,6 +78,21 @@ class ChangedProjectsPrinterTest : FunSpec({
         result shouldContain "affected via :api"
     }
 
+    test("displays root project as ': (root)' instead of ':'") {
+        // given
+        val printer = ChangedProjectsPrinter()
+        val rootMetadata = ProjectMetadata("my-project", ":", changedFiles = listOf("build.gradle.kts"))
+
+        // when
+        val result = printer.buildReport(
+            header = "Changed projects:",
+            monorepoProjects = MonorepoProjects(listOf(rootMetadata))
+        )
+
+        // then
+        result shouldContain ": (root)"
+    }
+
     test("multiple directly changed projects are listed sorted") {
         // given
         val printer = ChangedProjectsPrinter()

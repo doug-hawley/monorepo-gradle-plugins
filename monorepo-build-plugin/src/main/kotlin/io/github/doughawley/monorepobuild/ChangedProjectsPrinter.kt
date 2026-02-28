@@ -39,25 +39,29 @@ class ChangedProjectsPrinter {
         sb.appendLine(header)
         sb.appendLine()
         directlyChanged.forEach { projectPath ->
-            sb.appendLine("  $projectPath")
+            sb.appendLine("  ${displayPath(projectPath)}")
         }
 
         if (transitivelyAffected.isNotEmpty()) {
             sb.appendLine()
-            val maxPathLen = transitivelyAffected.maxOf { it.length }
+            val maxPathLen = transitivelyAffected.maxOf { displayPath(it).length }
             transitivelyAffected.forEach { projectPath ->
                 val via = monorepoProjects.projects.find { it.fullyQualifiedName == projectPath }
                     ?.dependencies
                     ?.filter { it.hasChanges() }
-                    ?.map { it.fullyQualifiedName }
+                    ?.map { displayPath(it.fullyQualifiedName) }
                     ?.sorted()
                     ?.joinToString(", ")
                     .orEmpty()
                 val annotation = if (via.isNotEmpty()) "  (affected via $via)" else ""
-                sb.appendLine("  ${projectPath.padEnd(maxPathLen)}$annotation")
+                sb.appendLine("  ${displayPath(projectPath).padEnd(maxPathLen)}$annotation")
             }
         }
 
         return sb.toString().trimEnd()
+    }
+
+    private fun displayPath(path: String): String {
+        return if (path == ":") ": (root)" else path
     }
 }
