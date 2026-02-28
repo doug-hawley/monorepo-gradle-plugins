@@ -31,6 +31,7 @@ dependencies {
 configurations {
     compileClasspath { extendsFrom(embed) }
     runtimeClasspath { extendsFrom(embed) }
+    testRuntimeClasspath { extendsFrom(embed) }
 }
 
 // Bundle embedded jar contents directly into the plugin jar
