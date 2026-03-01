@@ -27,7 +27,7 @@ dependencies {
 }
 
 // Make embedded classes available for compilation, runtime, and all test source sets
-// (these configurations are not published in the POM)
+// (compileClasspath/runtimeClasspath are not published in the POM)
 configurations {
     compileClasspath { extendsFrom(embed) }
     runtimeClasspath { extendsFrom(embed) }
@@ -72,6 +72,7 @@ dependencies {
     add("unitTestImplementation", "io.kotest:kotest-runner-junit5:5.9.1")
     add("unitTestImplementation", "io.kotest:kotest-assertions-core:5.9.1")
     add("unitTestImplementation", "io.kotest:kotest-property:5.9.1")
+    add("unitTestImplementation", "io.kotest:kotest-framework-datatest:5.9.1")
     add("unitTestImplementation", "io.mockk:mockk:1.13.12")
 
     // Functional test dependencies
@@ -117,12 +118,12 @@ gradlePlugin {
     vcsUrl.set("https://github.com/doug-hawley/monorepo-gradle-plugins.git")
 
     plugins {
-        register("monorepoBuildPlugin") {
-            id = "io.github.doug-hawley.monorepo-build-plugin"
-            implementationClass = "io.github.doughawley.monorepobuild.MonorepoBuildPlugin"
-            displayName = "Monorepo Build Plugin"
-            description = "A Gradle plugin to selectively build changed projects in a monorepo based on git history"
-            tags.set(listOf("monorepo", "git", "ci", "optimization", "build"))
+        register("monorepoReleasePlugin") {
+            id = "io.github.doug-hawley.monorepo-release-plugin"
+            implementationClass = "io.github.doughawley.monoreporelease.MonorepoReleasePlugin"
+            displayName = "Monorepo Release Plugin"
+            description = "A Gradle plugin for per-project versioning and tagging in a Gradle monorepo"
+            tags.set(listOf("monorepo", "git", "release", "versioning", "tagging"))
         }
     }
 }

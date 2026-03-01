@@ -1,4 +1,4 @@
-package io.github.doughawley.monorepobuild.git
+package io.github.doughawley.monorepocore.git
 
 import org.gradle.api.logging.Logger
 import java.io.File

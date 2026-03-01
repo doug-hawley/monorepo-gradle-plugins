@@ -1,4 +1,4 @@
-package io.github.doughawley.monorepobuild.git
+package io.github.doughawley.monorepocore.git
 
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -278,9 +278,6 @@ class GitCommandExecutorTest : FunSpec({
     }
 })
 
-/**
- * Helper function to execute git commands for test setup
- */
 private fun executeGitCommand(directory: File, vararg command: String) {
     val fullCommand = arrayOf("git") + command
     val process = ProcessBuilder(*fullCommand)
