@@ -2,14 +2,12 @@ package io.github.doughawley.monoreporelease.domain
 
 object TagPattern {
 
-    private val RELEASE_BRANCH_REGEX = Regex("""^release/.+/v\d+\.\d+\.x$""")
-
     fun formatTag(globalPrefix: String, projectPrefix: String, version: SemanticVersion): String {
         return "$globalPrefix/$projectPrefix/v$version"
     }
 
-    fun formatReleaseBranch(projectPrefix: String, version: SemanticVersion): String {
-        return "release/$projectPrefix/v${version.major}.${version.minor}.x"
+    fun formatReleaseBranch(globalPrefix: String, projectPrefix: String, version: SemanticVersion): String {
+        return "$globalPrefix/$projectPrefix/v${version.major}.${version.minor}.x"
     }
 
     fun deriveProjectTagPrefix(gradlePath: String): String {
@@ -23,8 +21,8 @@ object TagPattern {
         return SemanticVersion.parse(versionStr)
     }
 
-    fun isReleaseBranch(branch: String): Boolean {
-        return RELEASE_BRANCH_REGEX.matches(branch)
+    fun isReleaseBranch(branch: String, globalPrefix: String): Boolean {
+        return Regex("^${Regex.escape(globalPrefix)}/.+/v\\d+\\.\\d+\\.x$").matches(branch)
     }
 
     fun parseVersionLineFromBranch(branch: String): Pair<Int, Int> {

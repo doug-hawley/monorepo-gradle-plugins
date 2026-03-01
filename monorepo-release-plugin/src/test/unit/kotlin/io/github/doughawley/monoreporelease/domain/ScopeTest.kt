@@ -23,7 +23,7 @@ class ScopeTest : FunSpec({
 
     context("fromString returns null for unrecognised input") {
         withData(
-            nameFn = { if (it.isEmpty()) "(empty string)" else it },
+            nameFn = { it.ifEmpty { "(empty string)" } },
             "release", "hotfix", "",
         ) { input ->
             Scope.fromString(input).shouldBeNull()

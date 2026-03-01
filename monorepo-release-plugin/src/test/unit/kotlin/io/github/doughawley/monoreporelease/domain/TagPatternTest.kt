@@ -23,13 +23,17 @@ class TagPatternTest : FunSpec({
         }
     }
 
-    context("formatReleaseBranch produces release/projectPrefix/vMajor.Minor.x") {
+    context("formatReleaseBranch produces globalPrefix/projectPrefix/vMajor.Minor.x") {
         withData(
             Triple("api", SemanticVersion(1, 2, 0), "release/api/v1.2.x"),
             Triple("app", SemanticVersion(0, 1, 0), "release/app/v0.1.x"),
         ) { (projectPrefix, version, expected) ->
-            TagPattern.formatReleaseBranch(projectPrefix, version) shouldBe expected
+            TagPattern.formatReleaseBranch("release", projectPrefix, version) shouldBe expected
         }
+    }
+
+    test("formatReleaseBranch uses the provided globalPrefix, not a hardcoded value") {
+        TagPattern.formatReleaseBranch("deploy", "api", SemanticVersion(1, 0, 0)) shouldBe "deploy/api/v1.0.x"
     }
 
     context("deriveProjectTagPrefix strips leading colon and replaces inner colons with dashes") {
@@ -62,7 +66,7 @@ class TagPatternTest : FunSpec({
         }
     }
 
-    context("isReleaseBranch") {
+    context("isReleaseBranch with default 'release' prefix") {
         withData(
             "release/api/v1.2.x" to true,
             "release/services-auth/v0.1.x" to true,
@@ -71,8 +75,13 @@ class TagPatternTest : FunSpec({
             "feature/my-feature" to false,
             "release/api/v1.2.0" to false,  // tag pattern, not branch
         ) { (branch, expected) ->
-            TagPattern.isReleaseBranch(branch) shouldBe expected
+            TagPattern.isReleaseBranch(branch, "release") shouldBe expected
         }
+    }
+
+    test("isReleaseBranch uses the provided globalPrefix, not a hardcoded value") {
+        TagPattern.isReleaseBranch("deploy/api/v1.0.x", "deploy") shouldBe true
+        TagPattern.isReleaseBranch("deploy/api/v1.0.x", "release") shouldBe false
     }
 
     context("parseVersionLineFromBranch extracts major and minor") {

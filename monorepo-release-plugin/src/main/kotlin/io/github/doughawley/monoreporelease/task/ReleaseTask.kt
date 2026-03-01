@@ -45,8 +45,9 @@ open class ReleaseTask : DefaultTask() {
         }
 
         // 3. Branch validation
+        val globalPrefix = rootExtension.globalTagPrefix
         val currentBranch = gitReleaseExecutor.currentBranch()
-        val isReleaseBranch = TagPattern.isReleaseBranch(currentBranch)
+        val isReleaseBranch = TagPattern.isReleaseBranch(currentBranch, globalPrefix)
         val isAllowedBranch = isReleaseBranch || rootExtension.releaseBranchPatterns.any { pattern ->
             currentBranch.matches(Regex(pattern))
         }
@@ -64,7 +65,6 @@ open class ReleaseTask : DefaultTask() {
         // 5. Determine tag prefix
         val projectPrefix = projectConfig.tagPrefix
             ?: TagPattern.deriveProjectTagPrefix(project.path)
-        val globalPrefix = rootExtension.globalTagPrefix
 
         // 6. Scan tags to find next version
         val latestVersion = if (isReleaseBranch) {
@@ -106,7 +106,7 @@ open class ReleaseTask : DefaultTask() {
 
         // 11. Create release branch locally (only on main)
         val releaseBranch = if (isMainBranch(currentBranch)) {
-            val branch = TagPattern.formatReleaseBranch(projectPrefix, nextVersion)
+            val branch = TagPattern.formatReleaseBranch(globalPrefix, projectPrefix, nextVersion)
             gitReleaseExecutor.createBranchLocally(branch)
             branch
         } else {

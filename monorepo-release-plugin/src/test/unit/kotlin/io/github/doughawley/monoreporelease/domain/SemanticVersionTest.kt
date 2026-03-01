@@ -21,7 +21,7 @@ class SemanticVersionTest : FunSpec({
 
     context("parse returns null for invalid input") {
         withData(
-            nameFn = { if (it.isEmpty()) "(empty string)" else it },
+            nameFn = { it.ifEmpty { "(empty string)" } },
             "not-a-version", "1.2", "1.2.3.4", "", "a.b.c",
         ) { input ->
             SemanticVersion.parse(input).shouldBeNull()
